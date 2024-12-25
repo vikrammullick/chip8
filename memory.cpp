@@ -1,32 +1,23 @@
 #include "memory.hpp"
+#include "constants.hpp"
 
 using namespace std;
 
 memory_t::memory_t(const vector<char> &rom_bytes) {
     // load fonts
-    constexpr size_t FONTSET_SIZE = 16 * 5;
-    constexpr array<uint8_t, FONTSET_SIZE> FONTSET = {
-        0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
-        0x20, 0x60, 0x20, 0x20, 0x70, // 1
-        0xF0, 0x10, 0xF0, 0x80, 0xF0, // 2
-        0xF0, 0x10, 0xF0, 0x10, 0xF0, // 3
-        0x90, 0x90, 0xF0, 0x10, 0x10, // 4
-        0xF0, 0x80, 0xF0, 0x10, 0xF0, // 5
-        0xF0, 0x80, 0xF0, 0x90, 0xF0, // 6
-        0xF0, 0x10, 0x20, 0x40, 0x40, // 7
-        0xF0, 0x90, 0xF0, 0x90, 0xF0, // 8
-        0xF0, 0x90, 0xF0, 0x10, 0xF0, // 9
-        0xF0, 0x90, 0xF0, 0x90, 0x90, // A
-        0xE0, 0x90, 0xE0, 0x90, 0xE0, // B
-        0xF0, 0x80, 0x80, 0x80, 0xF0, // C
-        0xE0, 0x90, 0x90, 0x90, 0xE0, // D
-        0xF0, 0x80, 0xF0, 0x80, 0xF0, // E
-        0xF0, 0x80, 0xF0, 0x80, 0x80  // F
-    };
-    constexpr size_t FONTSET_OFFSET = 0x050;
-    std::copy(FONTSET.begin(), FONTSET.end(), m_data.begin() + FONTSET_OFFSET);
+    std::copy(constants::FONTSET.begin(),
+              constants::FONTSET.end(),
+              m_data.begin() + constants::FONTSET_OFFSET);
 
     // load rom
-    constexpr size_t ROM_OFFSET = 0x200;
-    std::copy(rom_bytes.begin(), rom_bytes.end(), m_data.begin() + ROM_OFFSET);
+    std::copy(rom_bytes.begin(),
+              rom_bytes.end(),
+              m_data.begin() + constants::ROM_OFFSET);
+}
+
+uint16_t memory_t::read(uint16_t &pc) {
+    uint8_t msb = m_data[pc++];
+    uint8_t lsb = m_data[pc++];
+
+    return (msb << 8) | lsb;
 }

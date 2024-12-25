@@ -1,6 +1,7 @@
 #ifndef INTERPRETER_H
 #define INTERPRETER_H
 
+#include "constants.hpp"
 #include "cpu.hpp"
 #include "memory.hpp"
 #include "ppu.hpp"
