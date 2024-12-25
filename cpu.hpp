@@ -6,7 +6,9 @@
 
 class cpu_t {
     memory_t &m_memory;
-    uint16_t m_pc = constants::ROM_OFFSET;
+    std::array<uint8_t, constants::NUM_REGS> m_Vx;
+    uint16_t m_I;
+    uint16_t m_PC = constants::ROM_OFFSET;
 
     void tick();
 

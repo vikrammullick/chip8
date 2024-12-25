@@ -28,6 +28,7 @@ constexpr std::array<uint8_t, FONTSET_SIZE> FONTSET = {
 };
 
 constexpr uint16_t MEM_SIZE = 4096;
+constexpr uint8_t NUM_REGS = 16;
 
 } // namespace constants
 
