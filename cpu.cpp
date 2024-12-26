@@ -15,10 +15,11 @@ void cpu_t::run() {
 }
 
 void cpu_t::tick() {
-    uint16_t opcode = m_memory.read(m_PC);
+    uint16_t opcode = m_memory.read_opcode(m_PC);
 
-    uint8_t x = opcode >> 8 & 0xF;
-    uint8_t y = opcode >> 4 & 0xF;
+    uint8_t n = opcode & 0xF;
+    uint8_t x = (opcode >> 8) & 0xF;
+    uint8_t y = (opcode >> 4) & 0xF;
     uint8_t kk = opcode & 0xFF;
     uint16_t nnn = opcode & 0x0FFF;
 
@@ -46,10 +47,45 @@ void cpu_t::tick() {
     };
 
     if (match(0x0, 0x0, 0xE, 0x0)) {
+        throw std::runtime_error("00E0");
+    }
+
+    if (match(0x0, 0x0, 0xE, 0xE)) {
+        m_PC = m_memory.pop_stack(m_SP);
+        return;
+    }
+
+    if (match(0x0, nullopt, nullopt, nullopt)) {
+        // This instruction is only used on the old computers on which Chip-8
+        // was originally implemented. It is ignored by modern interpreters.
+        return;
+    }
+
+    if (match(0x1, nullopt, nullopt, nullopt)) {
+        m_PC = nnn;
+        return;
+    }
+
+    if (match(0x2, nullopt, nullopt, nullopt)) {
+        m_memory.push_stack(m_SP, m_PC);
+        m_PC = nnn;
+        return;
+    }
+
+    if (match(0x3, nullopt, nullopt, nullopt)) {
+        if (m_Vx[x] == kk) {
+            m_PC += 2;
+        }
+        return;
     }
 
     if (match(0x6, nullopt, nullopt, nullopt)) {
         m_Vx[x] = kk;
+        return;
+    }
+
+    if (match(0x7, nullopt, nullopt, nullopt)) {
+        m_Vx[x] += kk;
         return;
     }
 
@@ -58,7 +94,31 @@ void cpu_t::tick() {
         return;
     }
 
+    if (match(0xD, nullopt, nullopt, nullopt)) {
+        // TODO: actual drawing
+        return;
+    }
+
+    if (match(0xF, nullopt, 0x2, 0x9)) {
+        m_I = constants::FONTSET_OFFSET + constants::FONTSET_SIZE * x;
+        return;
+    }
+
+    if (match(0xF, nullopt, 0x3, 0x3)) {
+        uint16_t val = m_Vx[x];
+        m_memory.write(m_I + 2, val % 10);
+        val /= 10;
+        m_memory.write(m_I + 1, val % 10);
+        val /= 10;
+        m_memory.write(m_I, val % 10);
+        return;
+    }
+
     if (match(0xF, nullopt, 0x6, 0x5)) {
+        for (uint8_t offset = 0; offset <= x; ++offset) {
+            m_Vx[x] = m_memory.read(m_I + offset);
+        }
+        return;
     }
 
     stringstream oss;

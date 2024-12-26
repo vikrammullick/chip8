@@ -9,6 +9,8 @@ class cpu_t {
     std::array<uint8_t, constants::NUM_REGS> m_Vx;
     uint16_t m_I;
     uint16_t m_PC = constants::ROM_OFFSET;
+    uint16_t m_SP =
+        constants::MEM_SIZE - sizeof(uint16_t) * constants::STACK_SIZE;
 
     void tick();
 
