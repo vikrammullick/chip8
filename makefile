@@ -13,7 +13,7 @@ TARGET := chip8
 all: $(TARGET)
 
 run: all
-	./chip8 breakout.rom
+	./chip8 roms/breakout.rom
 
 $(TARGET): $(OBJS)
 	$(CXX) $(CXXFLAGS) -o $@ $^

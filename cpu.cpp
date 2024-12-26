@@ -6,7 +6,7 @@
 
 using namespace std;
 
-cpu_t::cpu_t(memory_t &memory) : m_memory(memory) {}
+cpu_t::cpu_t(memory_t &memory, ppu_t &ppu) : m_memory(memory), m_ppu(ppu) {}
 
 void cpu_t::run() {
     while (1) {
@@ -17,10 +17,10 @@ void cpu_t::run() {
 void cpu_t::tick() {
     uint16_t opcode = m_memory.read_opcode(m_PC);
 
-    uint8_t n = opcode & 0xF;
-    uint8_t x = (opcode >> 8) & 0xF;
-    uint8_t y = (opcode >> 4) & 0xF;
-    uint8_t kk = opcode & 0xFF;
+    uint8_t n = opcode & 0x000F;
+    uint8_t x = (opcode >> 8) & 0x000F;
+    uint8_t y = (opcode >> 4) & 0x000F;
+    uint8_t kk = opcode & 0x00FF;
     uint16_t nnn = opcode & 0x0FFF;
 
     auto match = [opcode](uint8_t a,
@@ -47,7 +47,8 @@ void cpu_t::tick() {
     };
 
     if (match(0x0, 0x0, 0xE, 0x0)) {
-        throw std::runtime_error("00E0");
+        m_ppu.clear();
+        return;
     }
 
     if (match(0x0, 0x0, 0xE, 0xE)) {
@@ -79,6 +80,20 @@ void cpu_t::tick() {
         return;
     }
 
+    if (match(0x4, nullopt, nullopt, nullopt)) {
+        if (m_Vx[x] != kk) {
+            m_PC += 2;
+        }
+        return;
+    }
+
+    if (match(0x5, nullopt, nullopt, 0x0)) {
+        if (m_Vx[x] == m_Vx[y]) {
+            m_PC += 2;
+        }
+        return;
+    }
+
     if (match(0x6, nullopt, nullopt, nullopt)) {
         m_Vx[x] = kk;
         return;
@@ -89,13 +104,99 @@ void cpu_t::tick() {
         return;
     }
 
+    if (match(0x8, nullopt, nullopt, 0x0)) {
+        m_Vx[x] = m_Vx[y];
+        return;
+    }
+
+    if (match(0x8, nullopt, nullopt, 0x1)) {
+        m_Vx[x] |= m_Vx[y];
+        return;
+    }
+
+    if (match(0x8, nullopt, nullopt, 0x2)) {
+        m_Vx[x] &= m_Vx[y];
+        return;
+    }
+
+    if (match(0x8, nullopt, nullopt, 0x3)) {
+        m_Vx[x] ^= m_Vx[y];
+        return;
+    }
+
+    if (match(0x8, nullopt, nullopt, 0x4)) {
+        uint16_t sum = m_Vx[x] + m_Vx[y];
+        m_Vx[x] = sum & 0xFF;
+        m_Vx[0xF] = (sum > 0xFF) ? 1 : 0;
+        return;
+    }
+
+    if (match(0x8, nullopt, nullopt, 0x5)) {
+        uint8_t vf = (m_Vx[x] >= m_Vx[y]) ? 1 : 0;
+        m_Vx[x] -= m_Vx[y];
+        m_Vx[0xF] = vf;
+        return;
+    }
+
+    if (match(0x8, nullopt, nullopt, 0x6)) {
+        uint8_t vf = (m_Vx[x] & 0b00000001) ? 1 : 0;
+        m_Vx[x] >>= 1;
+        m_Vx[0xF] = vf;
+        return;
+    }
+
+    if (match(0x8, nullopt, nullopt, 0x7)) {
+        uint8_t vf = (m_Vx[y] >= m_Vx[x]) ? 1 : 0;
+        m_Vx[x] = m_Vx[y] - m_Vx[x];
+        m_Vx[0xF] = vf;
+        return;
+    }
+
+    if (match(0x8, nullopt, nullopt, 0xE)) {
+        uint8_t vf = (m_Vx[x] & 0b10000000) ? 1 : 0;
+        m_Vx[x] <<= 1;
+        m_Vx[0xF] = vf;
+        return;
+    }
+
+    if (match(0x9, nullopt, nullopt, 0x0)) {
+        if (m_Vx[x] != m_Vx[y]) {
+            m_PC += 2;
+        }
+        return;
+    }
+
     if (match(0xA, nullopt, nullopt, nullopt)) {
         m_I = nnn;
         return;
     }
 
     if (match(0xD, nullopt, nullopt, nullopt)) {
-        // TODO: actual drawing
+        m_Vx[0xF] = 0;
+
+        for (uint8_t row = 0; row < n; ++row) {
+            uint8_t sprite = m_memory.read(m_I + row);
+
+            uint8_t screen_y = (m_Vx[y] + row) % constants::SCREEN_HEIGHT;
+
+            for (uint8_t col = 0; col < 8; ++col) {
+                uint8_t screen_x = (m_Vx[x] + col) % constants::SCREEN_WIDTH;
+
+                bool pixel_on = sprite & (1 << 7 >> col);
+
+                if (pixel_on) {
+                    if (m_ppu.toggle(screen_y, screen_x)) {
+                        m_Vx[0xF] = 1;
+                    }
+                }
+            }
+        }
+        m_ppu.print();
+        return;
+    }
+
+    if (match(0xF, nullopt, 0x1, 0xE)) {
+        m_I += m_Vx[x];
         return;
     }
 
@@ -114,9 +215,16 @@ void cpu_t::tick() {
         return;
     }
 
+    if (match(0xF, nullopt, 0x5, 0x5)) {
+        for (uint8_t offset = 0; offset <= x; ++offset) {
+            m_memory.write(m_I + offset, m_Vx[offset]);
+        }
+        return;
+    }
+
     if (match(0xF, nullopt, 0x6, 0x5)) {
         for (uint8_t offset = 0; offset <= x; ++offset) {
-            m_Vx[x] = m_memory.read(m_I + offset);
+            m_Vx[offset] = m_memory.read(m_I + offset);
         }
         return;
     }
