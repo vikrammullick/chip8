@@ -5,6 +5,8 @@
 extern SDL_Renderer *renderer;
 extern SDL_Window *window;
 
+extern uint16_t keyboard;
+
 extern bool running;
 
 extern void refresh_screen();

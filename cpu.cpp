@@ -228,8 +228,41 @@ void cpu_t::tick() {
         return;
     }
 
+    if (match(0xE, nullopt, 0x9, 0xE)) {
+        if (keyboard & (0b00000001 << m_Vx[x])) {
+            m_PC += 2;
+        }
+        return;
+    }
+
+    if (match(0xE, nullopt, 0xA, 0x1)) {
+        if (!(keyboard & (0b00000001 << m_Vx[x]))) {
+            m_PC += 2;
+        }
+        return;
+    }
+
     if (match(0xF, nullopt, 0x0, 0x7)) {
         m_Vx[x] = m_DT;
+        return;
+    }
+
+    if (match(0xF, nullopt, 0x0, 0xA)) {
+        uint16_t keyboard_state = keyboard;
+
+        uint8_t key_pressed = 0;
+
+        while (keyboard_state) {
+            if (keyboard_state & 0b1) {
+                m_Vx[x] = key_pressed;
+                return;
+            }
+
+            keyboard_state = keyboard_state >> 1;
+            key_pressed++;
+        }
+
+        m_PC -= 2;
         return;
     }
 
@@ -249,7 +282,7 @@ void cpu_t::tick() {
     }
 
     if (match(0xF, nullopt, 0x2, 0x9)) {
-        m_I = constants::FONTSET_OFFSET + constants::FONTSET_SIZE * x;
+        m_I = constants::FONTSET_OFFSET + constants::FONTSET_SIZE * m_Vx[x];
         return;
     }
 

@@ -7,8 +7,9 @@ namespace constants {
 constexpr uint16_t ROM_OFFSET = 0x0200;
 
 constexpr uint16_t FONTSET_OFFSET = 0x0050;
-constexpr size_t FONTSET_SIZE = 16 * 5;
-constexpr std::array<uint8_t, FONTSET_SIZE> FONTSET = {
+constexpr size_t NUM_FONTS = 16;
+constexpr size_t FONTSET_SIZE = 5;
+constexpr std::array<uint8_t, NUM_FONTS * FONTSET_SIZE> FONTSET = {
     0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
     0x20, 0x60, 0x20, 0x20, 0x70, // 1
     0xF0, 0x10, 0xF0, 0x80, 0xF0, // 2

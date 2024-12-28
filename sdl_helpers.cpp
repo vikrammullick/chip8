@@ -5,6 +5,8 @@ SDL_Renderer *renderer = nullptr;
 SDL_Window *window = nullptr;
 SDL_Texture *texture = nullptr;
 
+uint16_t keyboard = 0;
+
 bool running = true;
 
 void refresh_screen() {
