@@ -1,5 +1,9 @@
-#include "sdl_helpers.hpp"
+#include <map>
+
 #include "constants.hpp"
+#include "sdl_helpers.hpp"
+
+using namespace std;
 
 SDL_Renderer *renderer = nullptr;
 SDL_Window *window = nullptr;
@@ -10,22 +14,40 @@ uint16_t keyboard = 0;
 bool running = true;
 
 void refresh_screen() {
+    static const map<SDL_Keycode, uint8_t> KEY_MAP = {
+        {SDLK_1, 0x1},
+        {SDLK_2, 0x2},
+        {SDLK_3, 0x3},
+        {SDLK_4, 0xC},
+        {SDLK_q, 0x4},
+        {SDLK_w, 0x5},
+        {SDLK_e, 0x6},
+        {SDLK_r, 0xD},
+        {SDLK_a, 0x7},
+        {SDLK_s, 0x8},
+        {SDLK_d, 0x9},
+        {SDLK_f, 0xE},
+        {SDLK_z, 0xA},
+        {SDLK_x, 0x0},
+        {SDLK_c, 0xB},
+        {SDLK_v, 0xF},
+    };
+
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
+        auto key_value_it = KEY_MAP.find(event.key.keysym.sym);
         switch (event.type) {
         case SDL_QUIT:
             running = false;
             break;
         case SDL_KEYDOWN:
-            switch (event.key.keysym.sym) {
-            default:
-                break;
+            if (key_value_it != KEY_MAP.end()) {
+                keyboard = keyboard | (0b1 << key_value_it->second);
             }
             break;
         case SDL_KEYUP:
-            switch (event.key.keysym.sym) {
-            default:
-                break;
+            if (key_value_it != KEY_MAP.end()) {
+                keyboard = keyboard & ~(0b1 << key_value_it->second);
             }
             break;
         default:
