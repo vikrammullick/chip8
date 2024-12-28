@@ -2,6 +2,7 @@
 #define PPU_H
 
 #include "constants.hpp"
+#include "sdl_helpers.hpp"
 
 #include <iostream>
 #include <vector>
@@ -20,18 +21,11 @@ class ppu_t {
     bool toggle(uint8_t screen_y, uint8_t screen_x);
     void clear();
 
+    // TODO: migrate to pixel buffer
     void print() {
-        std::cout << "\33[2J\33[H" << std::endl;
-        for (uint8_t row = 0; row < constants::SCREEN_HEIGHT; row++) {
-            std::cout << '[';
-            for (uint8_t col = 0; col < constants::SCREEN_WIDTH; col++) {
-                std::cout << (m_data[row * constants::SCREEN_WIDTH + col]
-                                  ? '*'
-                                  : ' ');
-            }
-            std::cout << ']';
-            std::cout << std::endl;
-        }
+        for (uint8_t i = 0; i < constants::SCREEN_HEIGHT; ++i)
+            for (uint8_t j = 0; j < constants::SCREEN_WIDTH; ++j)
+                draw_pixel(i, j, m_data[i * constants::SCREEN_WIDTH + j]);
     }
 };
 

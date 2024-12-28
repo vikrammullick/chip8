@@ -13,5 +13,4 @@ void ppu_t::clear() {
     for (auto &pixel : m_data) {
         pixel = 0;
     }
-    print();
 }

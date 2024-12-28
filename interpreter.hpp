@@ -13,6 +13,7 @@ class interpreter_t {
 
   public:
     interpreter_t(const std::vector<char> &rom_bytes);
+    ~interpreter_t();
 
     void run();
 };

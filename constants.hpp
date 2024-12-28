@@ -33,6 +33,7 @@ constexpr uint8_t STACK_SIZE = 8;
 
 constexpr uint8_t SCREEN_HEIGHT = 32;
 constexpr uint8_t SCREEN_WIDTH = 64;
+constexpr uint8_t DISPLAY_SCALE = 10;
 constexpr uint16_t SCREEN_PIXEL_COUNT = SCREEN_HEIGHT * SCREEN_WIDTH;
 
 } // namespace constants

@@ -1,4 +1,5 @@
 #include "cpu.hpp"
+#include "sdl_helpers.hpp"
 
 #include <iostream>
 #include <optional>
@@ -9,8 +10,17 @@ using namespace std;
 cpu_t::cpu_t(memory_t &memory, ppu_t &ppu) : m_memory(memory), m_ppu(ppu) {}
 
 void cpu_t::run() {
-    while (1) {
-        tick();
+    while (running) {
+        m_ppu.print();
+        refresh_screen();
+
+        // was told to run this at 660 hz
+        for (size_t i = 0; i < 11; ++i) {
+            tick();
+        }
+
+        // TODO: do something cleaer than this
+        SDL_Delay(16);
     }
 }
 
@@ -191,7 +201,6 @@ void cpu_t::tick() {
                 }
             }
         }
-        m_ppu.print();
         return;
     }
 
