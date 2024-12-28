@@ -14,6 +14,8 @@ class cpu_t {
     uint16_t m_PC = constants::ROM_OFFSET;
     uint16_t m_SP =
         constants::MEM_SIZE - sizeof(uint16_t) * constants::STACK_SIZE;
+    uint8_t m_DT = 0;
+    uint8_t m_ST = 0;
 
     void tick();
 

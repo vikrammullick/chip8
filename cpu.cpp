@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <optional>
+#include <random>
 #include <sstream>
 
 using namespace std;
@@ -13,6 +14,14 @@ void cpu_t::run() {
     while (running) {
         m_ppu.print();
         refresh_screen();
+
+        if (m_DT) {
+            --m_DT;
+        }
+        if (m_ST) {
+            // TODO: play sound
+            --m_ST;
+        }
 
         // was told to run this at 660 hz
         for (size_t i = 0; i < 11; ++i) {
@@ -181,6 +190,21 @@ void cpu_t::tick() {
         return;
     }
 
+    if (match(0xB, nullopt, nullopt, nullopt)) {
+        m_PC = nnn + m_Vx[0x0];
+        return;
+    }
+
+    if (match(0xC, nullopt, nullopt, nullopt)) {
+        static std::random_device rd;
+        static std::mt19937 gen(rd());
+        static std::uniform_int_distribution<uint16_t> dis(0, 255);
+        uint8_t rand_byte = static_cast<uint8_t>(dis(gen));
+
+        m_Vx[x] = kk & rand_byte;
+        return;
+    }
+
     if (match(0xD, nullopt, nullopt, nullopt)) {
         m_Vx[0xF] = 0;
 
@@ -201,6 +225,21 @@ void cpu_t::tick() {
                 }
             }
         }
+        return;
+    }
+
+    if (match(0xF, nullopt, 0x0, 0x7)) {
+        m_Vx[x] = m_DT;
+        return;
+    }
+
+    if (match(0xF, nullopt, 0x1, 0x5)) {
+        m_DT = m_Vx[x];
+        return;
+    }
+
+    if (match(0xF, nullopt, 0x1, 0x8)) {
+        m_ST = m_Vx[x];
         return;
     }
 
