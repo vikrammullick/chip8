@@ -16,6 +16,7 @@ class cpu_t {
         constants::MEM_SIZE - sizeof(uint16_t) * constants::STACK_SIZE;
     uint8_t m_DT = 0;
     uint8_t m_ST = 0;
+    bool m_vblank = false;
 
     void tick();
 

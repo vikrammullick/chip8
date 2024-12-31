@@ -14,6 +14,7 @@ void cpu_t::run() {
     while (running) {
         m_ppu.print();
         refresh_screen();
+        m_vblank = true;
 
         if (m_DT) {
             --m_DT;
@@ -26,6 +27,7 @@ void cpu_t::run() {
         // was told to run this at 660 hz
         for (size_t i = 0; i < 11; ++i) {
             tick();
+            m_vblank = false;
         }
 
         // TODO: do something cleaer than this
@@ -130,16 +132,19 @@ void cpu_t::tick() {
 
     if (match(0x8, nullopt, nullopt, 0x1)) {
         m_Vx[x] |= m_Vx[y];
+        m_Vx[0xF] = 0;
         return;
     }
 
     if (match(0x8, nullopt, nullopt, 0x2)) {
         m_Vx[x] &= m_Vx[y];
+        m_Vx[0xF] = 0;
         return;
     }
 
     if (match(0x8, nullopt, nullopt, 0x3)) {
         m_Vx[x] ^= m_Vx[y];
+        m_Vx[0xF] = 0;
         return;
     }
 
@@ -158,6 +163,7 @@ void cpu_t::tick() {
     }
 
     if (match(0x8, nullopt, nullopt, 0x6)) {
+        m_Vx[x] = m_Vx[y];
         uint8_t vf = (m_Vx[x] & 0b00000001) ? 1 : 0;
         m_Vx[x] >>= 1;
         m_Vx[0xF] = vf;
@@ -172,6 +178,7 @@ void cpu_t::tick() {
     }
 
     if (match(0x8, nullopt, nullopt, 0xE)) {
+        m_Vx[x] = m_Vx[y];
         uint8_t vf = (m_Vx[x] & 0b10000000) ? 1 : 0;
         m_Vx[x] <<= 1;
         m_Vx[0xF] = vf;
@@ -206,15 +213,38 @@ void cpu_t::tick() {
     }
 
     if (match(0xD, nullopt, nullopt, nullopt)) {
+        if (!m_vblank) {
+            m_PC -= 2;
+            return;
+        }
+
         m_Vx[0xF] = 0;
 
+        bool should_wrap_vertical = m_Vx[y] >= constants::SCREEN_HEIGHT;
+        bool should_wrap_horizontal = m_Vx[x] >= constants::SCREEN_WIDTH;
         for (uint8_t row = 0; row < n; ++row) {
             uint8_t sprite = m_memory.read(m_I + row);
 
-            uint8_t screen_y = (m_Vx[y] + row) % constants::SCREEN_HEIGHT;
+            uint8_t screen_y = m_Vx[y] + row;
+
+            if (screen_y >= constants::SCREEN_HEIGHT) {
+                if (should_wrap_vertical) {
+                    screen_y %= constants::SCREEN_HEIGHT;
+                } else {
+                    continue;
+                }
+            }
 
             for (uint8_t col = 0; col < 8; ++col) {
-                uint8_t screen_x = (m_Vx[x] + col) % constants::SCREEN_WIDTH;
+                uint8_t screen_x = m_Vx[x] + col;
+
+                if (screen_x >= constants::SCREEN_WIDTH) {
+                    if (should_wrap_horizontal) {
+                        screen_x %= constants::SCREEN_WIDTH;
+                    } else {
+                        continue;
+                    }
+                }
 
                 bool pixel_on = sprite & (1 << 7 >> col);
 
@@ -298,14 +328,14 @@ void cpu_t::tick() {
 
     if (match(0xF, nullopt, 0x5, 0x5)) {
         for (uint8_t offset = 0; offset <= x; ++offset) {
-            m_memory.write(m_I + offset, m_Vx[offset]);
+            m_memory.write(m_I++, m_Vx[offset]);
         }
         return;
     }
 
     if (match(0xF, nullopt, 0x6, 0x5)) {
         for (uint8_t offset = 0; offset <= x; ++offset) {
-            m_Vx[offset] = m_memory.read(m_I + offset);
+            m_Vx[offset] = m_memory.read(m_I++);
         }
         return;
     }
