@@ -278,13 +278,24 @@ void cpu_t::tick() {
     }
 
     if (match(0xF, nullopt, 0x0, 0xA)) {
+        static bool waiting_key_release = false;
+
+        if (waiting_key_release) {
+            if (keyboard & (0b1 << m_Vx[x])) {
+                m_PC -= 2;
+            } else {
+                waiting_key_release = false;
+            }
+            return;
+        }
+
         uint16_t keyboard_state = keyboard;
-
         uint8_t key_pressed = 0;
-
         while (keyboard_state) {
             if (keyboard_state & 0b1) {
                 m_Vx[x] = key_pressed;
+                m_PC -= 2;
+                waiting_key_release = true;
                 return;
             }
 
