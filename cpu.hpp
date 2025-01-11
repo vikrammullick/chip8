@@ -6,7 +6,16 @@
 #include "ppu.hpp"
 
 class cpu_t {
-    memory_t &m_memory;
+    class control_unit_t {
+        memory_t &m_memory;
+
+      public:
+        control_unit_t(memory_t &memory);
+        void write(uint16_t addr, uint8_t val);
+        uint8_t read(uint16_t addr);
+    };
+
+    control_unit_t m_control_unit;
     ppu_t &m_ppu;
 
     std::array<uint8_t, constants::NUM_REGS> m_Vx;

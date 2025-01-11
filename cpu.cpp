@@ -8,7 +8,18 @@
 
 using namespace std;
 
-cpu_t::cpu_t(memory_t &memory, ppu_t &ppu) : m_memory(memory), m_ppu(ppu) {}
+cpu_t::cpu_t(memory_t &memory, ppu_t &ppu)
+    : m_control_unit(memory), m_ppu(ppu) {}
+
+cpu_t::control_unit_t::control_unit_t(memory_t &memory) : m_memory(memory) {}
+
+void cpu_t::control_unit_t::write(uint16_t addr, uint8_t val) {
+    m_memory.write(addr, val);
+}
+
+uint8_t cpu_t::control_unit_t::read(uint16_t addr) {
+    return m_memory.read(addr);
+}
 
 void cpu_t::run() {
     while (g_running) {
@@ -36,21 +47,21 @@ void cpu_t::run() {
 }
 
 uint16_t cpu_t::read_opcode() {
-    uint8_t msb = m_memory.read(m_PC++);
-    uint8_t lsb = m_memory.read(m_PC++);
+    uint8_t msb = m_control_unit.read(m_PC++);
+    uint8_t lsb = m_control_unit.read(m_PC++);
 
     return (msb << 8) | lsb;
 }
 
 void cpu_t::push_pc_to_stack() {
-    m_memory.write(m_SP++, m_PC & 0xFF);
-    m_memory.write(m_SP++, m_PC >> 8);
+    m_control_unit.write(m_SP++, m_PC & 0xFF);
+    m_control_unit.write(m_SP++, m_PC >> 8);
 }
 
 void cpu_t::pop_pc_from_stack() {
-    m_PC = m_memory.read(--m_SP);
+    m_PC = m_control_unit.read(--m_SP);
     m_PC = m_PC << 8;
-    m_PC |= m_memory.read(--m_SP);
+    m_PC |= m_control_unit.read(--m_SP);
 }
 
 void cpu_t::tick() {
@@ -251,7 +262,7 @@ void cpu_t::tick() {
                 }
             }
 
-            uint8_t row_sprite = m_memory.read(m_I + row);
+            uint8_t row_sprite = m_control_unit.read(m_I + row);
             for (uint8_t col = 0; col < 8; ++col) {
                 uint8_t screen_x = m_Vx[x] + col;
                 if (screen_x >= constants::SCREEN_WIDTH) {
@@ -344,24 +355,24 @@ void cpu_t::tick() {
 
     if (match(0xF, nullopt, 0x3, 0x3)) {
         uint16_t val = m_Vx[x];
-        m_memory.write(m_I + 2, val % 10);
+        m_control_unit.write(m_I + 2, val % 10);
         val /= 10;
-        m_memory.write(m_I + 1, val % 10);
+        m_control_unit.write(m_I + 1, val % 10);
         val /= 10;
-        m_memory.write(m_I, val % 10);
+        m_control_unit.write(m_I, val % 10);
         return;
     }
 
     if (match(0xF, nullopt, 0x5, 0x5)) {
         for (uint8_t offset = 0; offset <= x; ++offset) {
-            m_memory.write(m_I++, m_Vx[offset]);
+            m_control_unit.write(m_I++, m_Vx[offset]);
         }
         return;
     }
 
     if (match(0xF, nullopt, 0x6, 0x5)) {
         for (uint8_t offset = 0; offset <= x; ++offset) {
-            m_Vx[offset] = m_memory.read(m_I++);
+            m_Vx[offset] = m_control_unit.read(m_I++);
         }
         return;
     }
