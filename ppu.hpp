@@ -8,16 +8,15 @@
 #include <vector>
 
 class ppu_t {
-    std::vector<uint8_t> m_data;
+    uint8_t *m_data;
     bool m_vblank;
 
+    static constexpr size_t NUM_PIXELS =
+        constants::SCREEN_WIDTH * constants::SCREEN_HEIGHT;
+
   public:
-    // TODO: clean
-    ppu_t() {
-        for (auto i = 0; i < 2048; ++i) {
-            m_data.push_back(0);
-        }
-    }
+    ppu_t();
+    ~ppu_t();
 
     bool toggle_pixel(uint8_t screen_y, uint8_t screen_x);
 
