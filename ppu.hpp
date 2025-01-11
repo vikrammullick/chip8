@@ -19,17 +19,11 @@ class ppu_t {
         }
     }
 
-    bool toggle(uint8_t screen_y, uint8_t screen_x);
+    bool toggle_pixel(uint8_t screen_y, uint8_t screen_x);
+
     void clear();
 
-    // TODO: migrate to pixel buffer
-    void refresh_screen() {
-        for (uint8_t i = 0; i < constants::SCREEN_HEIGHT; ++i)
-            for (uint8_t j = 0; j < constants::SCREEN_WIDTH; ++j)
-                sdl_draw_pixel(i, j, m_data[i * constants::SCREEN_WIDTH + j]);
-        m_vblank = true;
-        sdl_refresh_screen();
-    }
+    void refresh_screen();
 
     void unset_vblank() { m_vblank = false; }
 

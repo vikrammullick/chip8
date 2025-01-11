@@ -213,6 +213,7 @@ void cpu_t::tick() {
     }
 
     if (match(0xD, nullopt, nullopt, nullopt)) {
+        // stall until vblank
         if (!m_ppu.vblank()) {
             m_PC -= 2;
             return;
@@ -223,10 +224,7 @@ void cpu_t::tick() {
         bool should_wrap_vertical = m_Vx[y] >= constants::SCREEN_HEIGHT;
         bool should_wrap_horizontal = m_Vx[x] >= constants::SCREEN_WIDTH;
         for (uint8_t row = 0; row < n; ++row) {
-            uint8_t sprite = m_memory.read(m_I + row);
-
             uint8_t screen_y = m_Vx[y] + row;
-
             if (screen_y >= constants::SCREEN_HEIGHT) {
                 if (should_wrap_vertical) {
                     screen_y %= constants::SCREEN_HEIGHT;
@@ -235,9 +233,9 @@ void cpu_t::tick() {
                 }
             }
 
+            uint8_t row_sprite = m_memory.read(m_I + row);
             for (uint8_t col = 0; col < 8; ++col) {
                 uint8_t screen_x = m_Vx[x] + col;
-
                 if (screen_x >= constants::SCREEN_WIDTH) {
                     if (should_wrap_horizontal) {
                         screen_x %= constants::SCREEN_WIDTH;
@@ -246,10 +244,9 @@ void cpu_t::tick() {
                     }
                 }
 
-                bool pixel_on = sprite & (1 << 7 >> col);
-
-                if (pixel_on) {
-                    if (m_ppu.toggle(screen_y, screen_x)) {
+                bool toggle_pixel = row_sprite & (0b10000000 >> col);
+                if (toggle_pixel) {
+                    if (m_ppu.toggle_pixel(screen_y, screen_x)) {
                         m_Vx[0xF] = 1;
                     }
                 }
