@@ -9,9 +9,9 @@ SDL_Renderer *renderer = nullptr;
 SDL_Window *window = nullptr;
 SDL_Texture *texture = nullptr;
 
-uint16_t keyboard = 0;
+uint16_t g_keyboard = 0;
 
-bool running = true;
+bool g_running = true;
 
 void sdl_refresh_screen() { SDL_RenderPresent(renderer); }
 
@@ -38,7 +38,7 @@ void sdl_poll_keyboard() {
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
         if (event.type == SDL_QUIT) {
-            running = false;
+            g_running = false;
             continue;
         }
 
@@ -58,14 +58,14 @@ void sdl_poll_keyboard() {
         uint16_t bit_mask = 0b1 << key_value_it->second;
 
         if (pressed_down) {
-            keyboard = keyboard | bit_mask;
+            g_keyboard = g_keyboard | bit_mask;
         } else {
-            keyboard = keyboard & ~bit_mask;
+            g_keyboard = g_keyboard & ~bit_mask;
         }
     }
 }
 
-void init_window() {
+void sdl_init_window() {
     SDL_Init(SDL_INIT_EVERYTHING);
 
     window =
@@ -79,13 +79,13 @@ void init_window() {
     SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
 }
 
-void destroy_window() {
+void sdl_destroy_window() {
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();
 }
 
-void draw_pixel(uint8_t screen_y, uint8_t screen_x, bool on) {
+void sdl_draw_pixel(uint8_t screen_y, uint8_t screen_x, bool on) {
     if (on) {
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
     } else {

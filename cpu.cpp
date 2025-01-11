@@ -11,7 +11,7 @@ using namespace std;
 cpu_t::cpu_t(memory_t &memory, ppu_t &ppu) : m_memory(memory), m_ppu(ppu) {}
 
 void cpu_t::run() {
-    while (running) {
+    while (g_running) {
         if (m_DT) {
             --m_DT;
         }
@@ -259,14 +259,14 @@ void cpu_t::tick() {
     }
 
     if (match(0xE, nullopt, 0x9, 0xE)) {
-        if (keyboard & (0b00000001 << m_Vx[x])) {
+        if (g_keyboard & (0b00000001 << m_Vx[x])) {
             m_PC += 2;
         }
         return;
     }
 
     if (match(0xE, nullopt, 0xA, 0x1)) {
-        if (!(keyboard & (0b00000001 << m_Vx[x]))) {
+        if (!(g_keyboard & (0b00000001 << m_Vx[x]))) {
             m_PC += 2;
         }
         return;
@@ -281,7 +281,7 @@ void cpu_t::tick() {
         static bool waiting_key_release = false;
 
         if (waiting_key_release) {
-            if (keyboard & (0b1 << m_Vx[x])) {
+            if (g_keyboard & (0b1 << m_Vx[x])) {
                 m_PC -= 2;
             } else {
                 waiting_key_release = false;
@@ -289,7 +289,7 @@ void cpu_t::tick() {
             return;
         }
 
-        uint16_t keyboard_state = keyboard;
+        uint16_t keyboard_state = g_keyboard;
         uint8_t key_pressed = 0;
         while (keyboard_state) {
             if (keyboard_state & 0b1) {
