@@ -8,9 +8,10 @@
 class cpu_t {
     class control_unit_t {
         memory_t &m_memory;
+        bus_t &m_bus;
 
       public:
-        control_unit_t(memory_t &memory);
+        control_unit_t(memory_t &memory, bus_t &bus);
         void write(uint16_t addr, uint8_t val);
         uint8_t read(uint16_t addr);
     };
@@ -33,7 +34,7 @@ class cpu_t {
     void tick();
 
   public:
-    cpu_t(memory_t &memory, ppu_t &ppu);
+    cpu_t(memory_t &memory, ppu_t &ppu, bus_t &bus);
 
     void run();
 };

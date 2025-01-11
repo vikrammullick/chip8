@@ -6,7 +6,7 @@ SRCS := run.cpp interpreter.cpp cpu.cpp ppu.cpp memory.cpp sdl_helpers.cpp
 
 OBJS := $(SRCS:.cpp=.o)
 
-HEADERS := interpreter.hpp cpu.hpp ppu.h memory.h constants.hpp sdl_helpers.hpp
+$HEADERS := interpreter.hpp cpu.hpp ppu.h memory.h bus.hpp constants.hpp sdl_helpers.hpp
 
 TARGET := chip8
 

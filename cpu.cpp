@@ -8,17 +8,33 @@
 
 using namespace std;
 
-cpu_t::cpu_t(memory_t &memory, ppu_t &ppu)
-    : m_control_unit(memory), m_ppu(ppu) {}
+cpu_t::cpu_t(memory_t &memory, ppu_t &ppu, bus_t &bus)
+    : m_control_unit(memory, bus), m_ppu(ppu) {}
 
-cpu_t::control_unit_t::control_unit_t(memory_t &memory) : m_memory(memory) {}
+cpu_t::control_unit_t::control_unit_t(memory_t &memory, bus_t &bus)
+    : m_memory(memory), m_bus(bus) {}
 
 void cpu_t::control_unit_t::write(uint16_t addr, uint8_t val) {
-    m_memory.write(addr, val);
+    m_bus.m_data_line = val;
+    m_bus.m_addr_line = addr;
+    m_bus.m_read_enabled = false;
+    m_bus.m_write_enabled = true;
+    m_bus.m_address_stable = true;
+    m_memory.service_request(); // TODO: replace this with some small delay
+    m_bus.m_address_stable = false;
+    m_bus.m_write_enabled = false;
 }
 
 uint8_t cpu_t::control_unit_t::read(uint16_t addr) {
-    return m_memory.read(addr);
+    m_bus.m_addr_line = addr;
+    m_bus.m_read_enabled = true;
+    m_bus.m_write_enabled = false;
+    m_bus.m_address_stable = true;
+    m_memory.service_request(); // TODO: replace this with some small delay
+    uint8_t data = m_bus.m_data_line;
+    m_bus.m_address_stable = false;
+    m_bus.m_read_enabled = false;
+    return data;
 }
 
 void cpu_t::run() {
