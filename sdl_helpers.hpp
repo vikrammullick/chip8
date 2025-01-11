@@ -9,7 +9,8 @@ extern uint16_t keyboard;
 
 extern bool running;
 
-extern void refresh_screen();
+extern void sdl_refresh_screen();
+extern void sdl_poll_keyboard();
 
 extern void init_window();
 

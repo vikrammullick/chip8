@@ -13,7 +13,9 @@ uint16_t keyboard = 0;
 
 bool running = true;
 
-void refresh_screen() {
+void sdl_refresh_screen() { SDL_RenderPresent(renderer); }
+
+void sdl_poll_keyboard() {
     static const map<SDL_Keycode, uint8_t> KEY_MAP = {
         {SDLK_1, 0x1},
         {SDLK_2, 0x2},
@@ -61,8 +63,6 @@ void refresh_screen() {
             keyboard = keyboard & ~bit_mask;
         }
     }
-
-    SDL_RenderPresent(renderer);
 }
 
 void init_window() {

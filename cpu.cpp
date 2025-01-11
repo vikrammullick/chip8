@@ -12,10 +12,6 @@ cpu_t::cpu_t(memory_t &memory, ppu_t &ppu) : m_memory(memory), m_ppu(ppu) {}
 
 void cpu_t::run() {
     while (running) {
-        m_ppu.print();
-        refresh_screen();
-        m_vblank = true;
-
         if (m_DT) {
             --m_DT;
         }
@@ -28,8 +24,11 @@ void cpu_t::run() {
         // was told to run this at 660 hz
         for (size_t i = 0; i < 11; ++i) {
             tick();
-            m_vblank = false;
+            m_ppu.unset_vblank();
         }
+
+        m_ppu.refresh_screen();
+        sdl_poll_keyboard();
 
         // TODO: do something cleaner than this
         SDL_Delay(16);
@@ -214,7 +213,7 @@ void cpu_t::tick() {
     }
 
     if (match(0xD, nullopt, nullopt, nullopt)) {
-        if (!m_vblank) {
+        if (!m_ppu.vblank()) {
             m_PC -= 2;
             return;
         }
