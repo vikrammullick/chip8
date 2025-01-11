@@ -19,6 +19,7 @@ void cpu_t::run() {
         if (m_DT) {
             --m_DT;
         }
+
         if (m_ST) {
             // TODO: play sound
             --m_ST;
@@ -30,7 +31,7 @@ void cpu_t::run() {
             m_vblank = false;
         }
 
-        // TODO: do something cleaer than this
+        // TODO: do something cleaner than this
         SDL_Delay(16);
     }
 }

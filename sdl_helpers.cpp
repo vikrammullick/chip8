@@ -35,23 +35,30 @@ void refresh_screen() {
 
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
-        auto key_value_it = KEY_MAP.find(event.key.keysym.sym);
-        switch (event.type) {
-        case SDL_QUIT:
+        if (event.type == SDL_QUIT) {
             running = false;
-            break;
-        case SDL_KEYDOWN:
-            if (key_value_it != KEY_MAP.end()) {
-                keyboard = keyboard | (0b1 << key_value_it->second);
-            }
-            break;
-        case SDL_KEYUP:
-            if (key_value_it != KEY_MAP.end()) {
-                keyboard = keyboard & ~(0b1 << key_value_it->second);
-            }
-            break;
-        default:
-            break;
+            continue;
+        }
+
+        bool pressed_down;
+        if (event.type == SDL_KEYDOWN) {
+            pressed_down = true;
+        } else if (event.type == SDL_KEYUP) {
+            pressed_down = false;
+        } else {
+            continue;
+        }
+
+        auto key_value_it = KEY_MAP.find(event.key.keysym.sym);
+        if (key_value_it == KEY_MAP.end()) {
+            continue;
+        }
+        uint16_t bit_mask = 0b1 << key_value_it->second;
+
+        if (pressed_down) {
+            keyboard = keyboard | bit_mask;
+        } else {
+            keyboard = keyboard & ~bit_mask;
         }
     }
 
