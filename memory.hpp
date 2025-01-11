@@ -15,11 +15,6 @@ class memory_t {
 
     void write(uint16_t addr, uint8_t val);
     uint8_t read(uint16_t addr);
-
-    // TODO: these should really live in the CPU
-    uint16_t read_opcode(uint16_t &pc);
-    void push_stack(uint16_t &sp, uint16_t pc);
-    uint16_t pop_stack(uint16_t &sp);
 };
 
 #endif // MEMORY_H

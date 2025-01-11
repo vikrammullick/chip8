@@ -35,8 +35,26 @@ void cpu_t::run() {
     }
 }
 
+uint16_t cpu_t::read_opcode() {
+    uint8_t msb = m_memory.read(m_PC++);
+    uint8_t lsb = m_memory.read(m_PC++);
+
+    return (msb << 8) | lsb;
+}
+
+void cpu_t::push_pc_to_stack() {
+    m_memory.write(m_SP++, m_PC & 0xFF);
+    m_memory.write(m_SP++, m_PC >> 8);
+}
+
+void cpu_t::pop_pc_from_stack() {
+    m_PC = m_memory.read(--m_SP);
+    m_PC = m_PC << 8;
+    m_PC |= m_memory.read(--m_SP);
+}
+
 void cpu_t::tick() {
-    uint16_t opcode = m_memory.read_opcode(m_PC);
+    uint16_t opcode = read_opcode();
 
     uint8_t n = opcode & 0x000F;
     uint8_t x = (opcode >> 8) & 0x000F;
@@ -73,7 +91,7 @@ void cpu_t::tick() {
     }
 
     if (match(0x0, 0x0, 0xE, 0xE)) {
-        m_PC = m_memory.pop_stack(m_SP);
+        pop_pc_from_stack();
         return;
     }
 
@@ -89,7 +107,7 @@ void cpu_t::tick() {
     }
 
     if (match(0x2, nullopt, nullopt, nullopt)) {
-        m_memory.push_stack(m_SP, m_PC);
+        push_pc_to_stack();
         m_PC = nnn;
         return;
     }
