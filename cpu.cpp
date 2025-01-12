@@ -37,28 +37,20 @@ uint8_t cpu_t::control_unit_t::read(uint16_t addr) {
     return data;
 }
 
-void cpu_t::run() {
-    while (g_running) {
-        if (m_DT) {
-            --m_DT;
-        }
+void cpu_t::tick() {
+    if (m_DT) {
+        --m_DT;
+    }
 
-        if (m_ST) {
-            // TODO: play sound
-            --m_ST;
-        }
+    if (m_ST) {
+        // TODO: play sound
+        --m_ST;
+    }
 
-        // was told to run this at 660 hz
-        for (size_t i = 0; i < 11; ++i) {
-            tick();
-            m_ppu.unset_vblank();
-        }
-
-        m_ppu.refresh_screen();
-        sdl_poll_keyboard();
-
-        // TODO: do something cleaner than this
-        SDL_Delay(16);
+    // was told to run this at 660 hz
+    for (size_t i = 0; i < 11; ++i) {
+        process_next_opcode();
+        m_ppu.unset_vblank();
     }
 }
 
@@ -80,7 +72,7 @@ void cpu_t::pop_pc_from_stack() {
     m_PC |= m_control_unit.read(--m_SP);
 }
 
-void cpu_t::tick() {
+void cpu_t::process_next_opcode() {
     uint16_t opcode = read_opcode();
 
     uint8_t n = opcode & 0x000F;

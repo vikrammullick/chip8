@@ -31,12 +31,12 @@ class cpu_t {
     void push_pc_to_stack();
     void pop_pc_from_stack();
 
-    void tick();
+    void process_next_opcode();
 
   public:
     cpu_t(memory_t &memory, ppu_t &ppu, bus_t &bus);
 
-    void run();
+    void tick();
 };
 
 #endif // CPU_H

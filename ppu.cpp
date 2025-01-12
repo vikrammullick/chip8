@@ -21,7 +21,7 @@ void ppu_t::clear() {
     }
 }
 
-void ppu_t::refresh_screen() {
+void ppu_t::tick() {
     for (uint8_t i = 0; i < constants::SCREEN_HEIGHT; ++i) {
         for (uint8_t j = 0; j < constants::SCREEN_WIDTH; ++j) {
             sdl_draw_pixel(i, j, m_data[i * constants::SCREEN_WIDTH + j]);

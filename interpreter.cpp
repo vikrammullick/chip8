@@ -10,4 +10,14 @@ interpreter_t::interpreter_t(const vector<char> &rom_bytes)
 
 interpreter_t::~interpreter_t() { sdl_destroy_window(); }
 
-void interpreter_t::run() { m_cpu.run(); }
+void interpreter_t::run() {
+    while (g_running) {
+        m_cpu.tick();
+        m_ppu.tick();
+
+        sdl_poll_keyboard();
+
+        // TODO: do something cleaner than this
+        SDL_Delay(16);
+    }
+}

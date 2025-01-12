@@ -22,7 +22,7 @@ class ppu_t {
 
     void clear();
 
-    void refresh_screen();
+    void tick();
 
     void unset_vblank() { m_vblank = false; }
 
