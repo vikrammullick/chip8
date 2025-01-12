@@ -10,14 +10,25 @@ interpreter_t::interpreter_t(const vector<char> &rom_bytes)
 
 interpreter_t::~interpreter_t() { sdl_destroy_window(); }
 
+uint64_t now() {
+    return std::chrono::duration_cast<std::chrono::microseconds>(
+               std::chrono::system_clock::now().time_since_epoch())
+        .count();
+}
+
 void interpreter_t::run() {
+    uint64_t last_ts = now();
     while (g_running) {
+        uint64_t current_ts = now();
+        if ((current_ts - last_ts) <
+            (constants::MICROS_PER_SEC / constants::INTERPRETER_CLOCK_RATE)) {
+            continue;
+        }
+        last_ts = current_ts;
+
         m_cpu.tick();
         m_ppu.tick();
 
         sdl_poll_keyboard();
-
-        // TODO: do something cleaner than this
-        SDL_Delay(16);
     }
 }
