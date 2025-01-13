@@ -22,6 +22,14 @@ void ppu_t::clear() {
 }
 
 void ppu_t::tick() {
+    if (++m_ticks ==
+        (constants::INTERPRETER_CLOCK_RATE / constants::PPU_CLOCK_RATE)) {
+        refresh_screen();
+        m_ticks = 0;
+    }
+}
+
+void ppu_t::refresh_screen() {
     for (uint8_t i = 0; i < constants::SCREEN_HEIGHT; ++i) {
         for (uint8_t j = 0; j < constants::SCREEN_WIDTH; ++j) {
             sdl_draw_pixel(i, j, m_data[i * constants::SCREEN_WIDTH + j]);

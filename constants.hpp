@@ -37,8 +37,11 @@ constexpr uint8_t SCREEN_WIDTH = 64;
 constexpr uint8_t DISPLAY_SCALE = 10;
 constexpr uint16_t SCREEN_PIXEL_COUNT = SCREEN_HEIGHT * SCREEN_WIDTH;
 
-constexpr uint64_t INTERPRETER_CLOCK_RATE = 60;
 constexpr uint64_t MICROS_PER_SEC = 1'000'000;
+constexpr uint64_t INTERPRETER_CLOCK_RATE = 60000;
+constexpr uint64_t PPU_CLOCK_RATE = 60;
+constexpr uint64_t CPU_CLOCK_RATE = 600;
+constexpr uint64_t DT_ST_CLOCK_RATE = 60;
 
 } // namespace constants
 

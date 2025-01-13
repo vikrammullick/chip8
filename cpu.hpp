@@ -27,6 +27,9 @@ class cpu_t {
     uint8_t m_DT = 0;
     uint8_t m_ST = 0;
 
+    uint64_t m_ticks = 0;
+    uint64_t m_timer_ticks = 0;
+
     uint16_t read_opcode();
     void push_pc_to_stack();
     void pop_pc_from_stack();

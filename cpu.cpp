@@ -38,19 +38,25 @@ uint8_t cpu_t::control_unit_t::read(uint16_t addr) {
 }
 
 void cpu_t::tick() {
-    if (m_DT) {
-        --m_DT;
-    }
-
-    if (m_ST) {
-        // TODO: play sound
-        --m_ST;
-    }
-
-    // was told to run this at 660 hz
-    for (size_t i = 0; i < 11; ++i) {
+    if (++m_ticks ==
+        (constants::INTERPRETER_CLOCK_RATE / constants::CPU_CLOCK_RATE)) {
         process_next_opcode();
         m_ppu.unset_vblank();
+        m_ticks = 0;
+    }
+
+    if (++m_timer_ticks ==
+        (constants::INTERPRETER_CLOCK_RATE / constants::DT_ST_CLOCK_RATE)) {
+        if (m_DT) {
+            --m_DT;
+        }
+
+        if (m_ST) {
+            // TODO: play sound
+            --m_ST;
+        }
+
+        m_timer_ticks = 0;
     }
 }
 

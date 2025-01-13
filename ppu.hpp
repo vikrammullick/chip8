@@ -11,8 +11,12 @@ class ppu_t {
     uint8_t *m_data;
     bool m_vblank;
 
+    uint64_t m_ticks = 0;
+
     static constexpr size_t NUM_PIXELS =
         constants::SCREEN_WIDTH * constants::SCREEN_HEIGHT;
+
+    void refresh_screen();
 
   public:
     ppu_t();
