@@ -22,23 +22,21 @@ cpu_t::control_unit_t::control_unit_t(memory_t &memory,
 void cpu_t::control_unit_t::write(uint16_t addr, uint8_t val) {
     m_bus.m_data_line = val;
     m_bus.m_addr_line = addr;
-    m_bus.m_read_enabled = false;
-    m_bus.m_write_enabled = true;
+    m_bus.m_rw_select = 1 << constants::WRITE_SELECT;
     // TODO: move to combinational logic once cpu implemented at cycle level
     m_address_decoder.select_chip();
     m_memory.service_request();
-    m_bus.m_write_enabled = false;
+    m_bus.m_rw_select = 0;
 }
 
 uint8_t cpu_t::control_unit_t::read(uint16_t addr) {
     m_bus.m_addr_line = addr;
-    m_bus.m_read_enabled = true;
-    m_bus.m_write_enabled = false;
+    m_bus.m_rw_select = 1 << constants::READ_SELECT;
     // TODO: move to combinational logic once cpu implemented at cycle level
     m_address_decoder.select_chip();
     m_memory.service_request();
     uint8_t data = m_bus.m_data_line;
-    m_bus.m_read_enabled = false;
+    m_bus.m_rw_select = 0;
     return data;
 }
 

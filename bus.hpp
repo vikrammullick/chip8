@@ -8,8 +8,7 @@ struct bus_t {
 
     uint8_t m_data_line;
 
-    bool m_read_enabled = false;
-    bool m_write_enabled = false;
+    uint8_t m_rw_select = 0;
 
     uint8_t m_chip_select = 0;
 };
