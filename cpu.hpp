@@ -1,6 +1,7 @@
 #ifndef CPU_H
 #define CPU_H
 
+#include "address_decoder.hpp"
 #include "constants.hpp"
 #include "memory.hpp"
 #include "ppu.hpp"
@@ -9,9 +10,12 @@ class cpu_t {
     class control_unit_t {
         memory_t &m_memory;
         bus_t &m_bus;
+        address_decoder_t &m_address_decoder;
 
       public:
-        control_unit_t(memory_t &memory, bus_t &bus);
+        control_unit_t(memory_t &memory,
+                       bus_t &bus,
+                       address_decoder_t &address_decoder);
         void write(uint16_t addr, uint8_t val);
         uint8_t read(uint16_t addr);
     };
@@ -37,7 +41,10 @@ class cpu_t {
     void process_next_opcode();
 
   public:
-    cpu_t(memory_t &memory, ppu_t &ppu, bus_t &bus);
+    cpu_t(memory_t &memory,
+          ppu_t &ppu,
+          bus_t &bus,
+          address_decoder_t &address_decoder);
 
     void tick();
 };

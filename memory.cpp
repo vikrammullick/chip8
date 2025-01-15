@@ -19,6 +19,10 @@ void memory_t::write(uint16_t addr, uint8_t val) { m_data[addr] = val; }
 uint8_t memory_t::read(uint16_t addr) { return m_data[addr]; }
 
 void memory_t::service_request() {
+    if (!(m_bus.m_chip_select & (1 << constants::MEMORY_CHIP_SELECT))) {
+        return;
+    }
+
     if (m_bus.m_read_enabled) {
         m_bus.m_data_line = read(m_bus.m_addr_line);
     }

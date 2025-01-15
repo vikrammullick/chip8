@@ -43,6 +43,8 @@ constexpr uint64_t PPU_CLOCK_RATE = 60;
 constexpr uint64_t CPU_CLOCK_RATE = 600;
 constexpr uint64_t DT_ST_CLOCK_RATE = 60;
 
+constexpr uint8_t MEMORY_CHIP_SELECT = 0;
+
 } // namespace constants
 
 #endif // CONSTANTS_H

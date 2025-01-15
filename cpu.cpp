@@ -8,11 +8,16 @@
 
 using namespace std;
 
-cpu_t::cpu_t(memory_t &memory, ppu_t &ppu, bus_t &bus)
-    : m_control_unit(memory, bus), m_ppu(ppu) {}
+cpu_t::cpu_t(memory_t &memory,
+             ppu_t &ppu,
+             bus_t &bus,
+             address_decoder_t &address_decoder)
+    : m_control_unit(memory, bus, address_decoder), m_ppu(ppu) {}
 
-cpu_t::control_unit_t::control_unit_t(memory_t &memory, bus_t &bus)
-    : m_memory(memory), m_bus(bus) {}
+cpu_t::control_unit_t::control_unit_t(memory_t &memory,
+                                      bus_t &bus,
+                                      address_decoder_t &address_decoder)
+    : m_memory(memory), m_bus(bus), m_address_decoder(address_decoder) {}
 
 void cpu_t::control_unit_t::write(uint16_t addr, uint8_t val) {
     m_bus.m_data_line = val;
@@ -20,6 +25,7 @@ void cpu_t::control_unit_t::write(uint16_t addr, uint8_t val) {
     m_bus.m_read_enabled = false;
     m_bus.m_write_enabled = true;
     // TODO: move to combinational logic once cpu implemented at cycle level
+    m_address_decoder.select_chip();
     m_memory.service_request();
     m_bus.m_write_enabled = false;
 }
@@ -29,6 +35,7 @@ uint8_t cpu_t::control_unit_t::read(uint16_t addr) {
     m_bus.m_read_enabled = true;
     m_bus.m_write_enabled = false;
     // TODO: move to combinational logic once cpu implemented at cycle level
+    m_address_decoder.select_chip();
     m_memory.service_request();
     uint8_t data = m_bus.m_data_line;
     m_bus.m_read_enabled = false;

@@ -8,10 +8,11 @@
 #include "ppu.hpp"
 
 class interpreter_t {
+    bus_t m_bus;
+    address_decoder_t m_address_decoder;
     memory_t m_memory;
     ppu_t m_ppu;
     cpu_t m_cpu;
-    bus_t m_bus;
 
   public:
     interpreter_t(const std::vector<char> &rom_bytes);
