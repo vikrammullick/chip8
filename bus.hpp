@@ -8,7 +8,6 @@ struct bus_t {
     uint8_t m_data_line;
     bool m_read_enabled = false;
     bool m_write_enabled = false;
-    bool m_address_stable = false;
 };
 
 #endif // BUS_H

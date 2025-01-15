@@ -19,9 +19,8 @@ void cpu_t::control_unit_t::write(uint16_t addr, uint8_t val) {
     m_bus.m_addr_line = addr;
     m_bus.m_read_enabled = false;
     m_bus.m_write_enabled = true;
-    m_bus.m_address_stable = true;
-    m_memory.service_request(); // TODO: replace this with some small delay
-    m_bus.m_address_stable = false;
+    // TODO: move to combinational logic once cpu implemented at cycle level
+    m_memory.service_request();
     m_bus.m_write_enabled = false;
 }
 
@@ -29,10 +28,9 @@ uint8_t cpu_t::control_unit_t::read(uint16_t addr) {
     m_bus.m_addr_line = addr;
     m_bus.m_read_enabled = true;
     m_bus.m_write_enabled = false;
-    m_bus.m_address_stable = true;
-    m_memory.service_request(); // TODO: replace this with some small delay
+    // TODO: move to combinational logic once cpu implemented at cycle level
+    m_memory.service_request();
     uint8_t data = m_bus.m_data_line;
-    m_bus.m_address_stable = false;
     m_bus.m_read_enabled = false;
     return data;
 }
