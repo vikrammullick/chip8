@@ -13,6 +13,7 @@ class interpreter_t {
     address_decoder_t m_address_decoder;
     memory_t m_memory;
     ppu_t m_ppu;
+    keyboard_t m_keyboard;
     timer_t m_delay_timer;
     timer_t m_sound_timer; // TODO actually support sound
     cpu_t m_cpu;

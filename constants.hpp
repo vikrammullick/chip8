@@ -28,8 +28,10 @@ constexpr std::array<uint8_t, NUM_FONTS * FONTSET_SIZE> FONTSET = {
     0xF0, 0x80, 0xF0, 0x80, 0x80  // F
 };
 
-constexpr uint16_t DELAY_TIMER_ADDR = 0x0000;
-constexpr uint16_t SOUND_TIMER_ADDR = 0x0001;
+constexpr uint16_t KEYBOARD_ADDR_LO = 0x0000;
+constexpr uint16_t KEYBOARD_ADDR_HI = 0x0001;
+constexpr uint16_t DELAY_TIMER_ADDR = 0x0002;
+constexpr uint16_t SOUND_TIMER_ADDR = 0x0003;
 
 constexpr uint16_t MEM_SIZE = 4096;
 constexpr uint8_t NUM_REGS = 16;
@@ -50,8 +52,9 @@ constexpr uint8_t READ_SELECT = 0;
 constexpr uint8_t WRITE_SELECT = 1;
 
 constexpr uint8_t MEMORY_CHIP_SELECT = 0;
-constexpr uint8_t DELAY_TIMER_CHIP_SELECT = 1;
-constexpr uint8_t SOUND_TIMER_CHIP_SELECT = 2;
+constexpr uint8_t KEYBOARD_CHIP_SELECT = 1;
+constexpr uint8_t DELAY_TIMER_CHIP_SELECT = 2;
+constexpr uint8_t SOUND_TIMER_CHIP_SELECT = 3;
 
 } // namespace constants
 

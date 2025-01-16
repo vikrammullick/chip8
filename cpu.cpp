@@ -10,19 +10,23 @@ using namespace std;
 
 cpu_t::cpu_t(memory_t &memory,
              ppu_t &ppu,
+             keyboard_t &keyboard,
              timer_t &delay_timer,
              timer_t &sound_timer,
              bus_t &bus,
              address_decoder_t &address_decoder)
-    : m_control_unit(memory, delay_timer, sound_timer, bus, address_decoder),
+    : m_control_unit(
+          memory, keyboard, delay_timer, sound_timer, bus, address_decoder),
       m_ppu(ppu) {}
 
 cpu_t::control_unit_t::control_unit_t(memory_t &memory,
+                                      keyboard_t &keyboard,
                                       timer_t &delay_timer,
                                       timer_t &sound_timer,
                                       bus_t &bus,
                                       address_decoder_t &address_decoder)
     : m_memory(memory),
+      m_keyboard(keyboard),
       m_delay_timer(delay_timer),
       m_sound_timer(sound_timer),
       m_bus(bus),
@@ -35,6 +39,7 @@ void cpu_t::control_unit_t::write(uint16_t addr, uint8_t val) {
     // TODO: move to combinational logic once cpu implemented at cycle level
     m_address_decoder.select_chip();
     m_memory.service_request();
+    m_keyboard.service_request();
     m_delay_timer.service_request();
     m_sound_timer.service_request();
     m_bus.m_rw_select = 0;
@@ -46,6 +51,7 @@ uint8_t cpu_t::control_unit_t::read(uint16_t addr) {
     // TODO: move to combinational logic once cpu implemented at cycle level
     m_address_decoder.select_chip();
     m_memory.service_request();
+    m_keyboard.service_request();
     m_delay_timer.service_request();
     m_sound_timer.service_request();
     uint8_t data = m_bus.m_data_line;
@@ -67,6 +73,13 @@ uint16_t cpu_t::read_opcode() {
     uint8_t lsb = m_control_unit.read(m_PC++);
 
     return (msb << 8) | lsb;
+}
+
+uint16_t cpu_t::read_keyboard() {
+    uint8_t keyboard_lo = m_control_unit.read(constants::KEYBOARD_ADDR_LO);
+    uint8_t keyboard_hi = m_control_unit.read(constants::KEYBOARD_ADDR_HI);
+
+    return (keyboard_hi << 8) | keyboard_lo;
 }
 
 void cpu_t::push_pc_to_stack() {
@@ -301,14 +314,16 @@ void cpu_t::process_next_opcode() {
     }
 
     if (match(0xE, nullopt, 0x9, 0xE)) {
-        if (g_keyboard & (0b00000001 << m_Vx[x])) {
+        uint16_t keyboard_state = read_keyboard();
+        if (keyboard_state & (0b00000001 << m_Vx[x])) {
             m_PC += 2;
         }
         return;
     }
 
     if (match(0xE, nullopt, 0xA, 0x1)) {
-        if (!(g_keyboard & (0b00000001 << m_Vx[x]))) {
+        uint16_t keyboard_state = read_keyboard();
+        if (!(keyboard_state & (0b00000001 << m_Vx[x]))) {
             m_PC += 2;
         }
         return;
@@ -322,8 +337,9 @@ void cpu_t::process_next_opcode() {
     if (match(0xF, nullopt, 0x0, 0xA)) {
         static bool waiting_key_release = false;
 
+        uint16_t keyboard_state = read_keyboard();
         if (waiting_key_release) {
-            if (g_keyboard & (0b1 << m_Vx[x])) {
+            if (keyboard_state & (0b1 << m_Vx[x])) {
                 m_PC -= 2;
             } else {
                 waiting_key_release = false;
@@ -331,7 +347,6 @@ void cpu_t::process_next_opcode() {
             return;
         }
 
-        uint16_t keyboard_state = g_keyboard;
         uint8_t key_pressed = 0;
         while (keyboard_state) {
             if (keyboard_state & 0b1) {

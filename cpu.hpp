@@ -3,6 +3,7 @@
 
 #include "address_decoder.hpp"
 #include "constants.hpp"
+#include "keyboard.hpp"
 #include "memory.hpp"
 #include "ppu.hpp"
 #include "timer.hpp"
@@ -10,6 +11,7 @@
 class cpu_t {
     class control_unit_t {
         memory_t &m_memory;
+        keyboard_t &m_keyboard;
         timer_t &m_delay_timer;
         timer_t &m_sound_timer;
         bus_t &m_bus;
@@ -17,6 +19,7 @@ class cpu_t {
 
       public:
         control_unit_t(memory_t &memory,
+                       keyboard_t &m_keyboard,
                        timer_t &delay_timer,
                        timer_t &sound_timer,
                        bus_t &bus,
@@ -37,6 +40,7 @@ class cpu_t {
     uint64_t m_ticks = 0;
 
     uint16_t read_opcode();
+    uint16_t read_keyboard();
     void push_pc_to_stack();
     void pop_pc_from_stack();
 
@@ -45,6 +49,7 @@ class cpu_t {
   public:
     cpu_t(memory_t &memory,
           ppu_t &ppu,
+          keyboard_t &keyboard,
           timer_t &delay_timer,
           timer_t &sound_timer,
           bus_t &bus,
