@@ -10,14 +10,23 @@ using namespace std;
 
 cpu_t::cpu_t(memory_t &memory,
              ppu_t &ppu,
+             timer_t &delay_timer,
+             timer_t &sound_timer,
              bus_t &bus,
              address_decoder_t &address_decoder)
-    : m_control_unit(memory, bus, address_decoder), m_ppu(ppu) {}
+    : m_control_unit(memory, delay_timer, sound_timer, bus, address_decoder),
+      m_ppu(ppu) {}
 
 cpu_t::control_unit_t::control_unit_t(memory_t &memory,
+                                      timer_t &delay_timer,
+                                      timer_t &sound_timer,
                                       bus_t &bus,
                                       address_decoder_t &address_decoder)
-    : m_memory(memory), m_bus(bus), m_address_decoder(address_decoder) {}
+    : m_memory(memory),
+      m_delay_timer(delay_timer),
+      m_sound_timer(sound_timer),
+      m_bus(bus),
+      m_address_decoder(address_decoder) {}
 
 void cpu_t::control_unit_t::write(uint16_t addr, uint8_t val) {
     m_bus.m_data_line = val;
@@ -26,6 +35,8 @@ void cpu_t::control_unit_t::write(uint16_t addr, uint8_t val) {
     // TODO: move to combinational logic once cpu implemented at cycle level
     m_address_decoder.select_chip();
     m_memory.service_request();
+    m_delay_timer.service_request();
+    m_sound_timer.service_request();
     m_bus.m_rw_select = 0;
 }
 
@@ -35,6 +46,8 @@ uint8_t cpu_t::control_unit_t::read(uint16_t addr) {
     // TODO: move to combinational logic once cpu implemented at cycle level
     m_address_decoder.select_chip();
     m_memory.service_request();
+    m_delay_timer.service_request();
+    m_sound_timer.service_request();
     uint8_t data = m_bus.m_data_line;
     m_bus.m_rw_select = 0;
     return data;
@@ -46,20 +59,6 @@ void cpu_t::tick() {
         process_next_opcode();
         m_ppu.unset_vblank();
         m_ticks = 0;
-    }
-
-    if (++m_timer_ticks ==
-        (constants::INTERPRETER_CLOCK_RATE / constants::DT_ST_CLOCK_RATE)) {
-        if (m_DT) {
-            --m_DT;
-        }
-
-        if (m_ST) {
-            // TODO: play sound
-            --m_ST;
-        }
-
-        m_timer_ticks = 0;
     }
 }
 
@@ -316,7 +315,7 @@ void cpu_t::process_next_opcode() {
     }
 
     if (match(0xF, nullopt, 0x0, 0x7)) {
-        m_Vx[x] = m_DT;
+        m_Vx[x] = m_control_unit.read(constants::DELAY_TIMER_ADDR);
         return;
     }
 
@@ -351,12 +350,12 @@ void cpu_t::process_next_opcode() {
     }
 
     if (match(0xF, nullopt, 0x1, 0x5)) {
-        m_DT = m_Vx[x];
+        m_control_unit.write(constants::DELAY_TIMER_ADDR, m_Vx[x]);
         return;
     }
 
     if (match(0xF, nullopt, 0x1, 0x8)) {
-        m_ST = m_Vx[x];
+        m_control_unit.write(constants::SOUND_TIMER_ADDR, m_Vx[x]);
         return;
     }
 

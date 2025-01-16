@@ -5,15 +5,20 @@
 #include "constants.hpp"
 #include "memory.hpp"
 #include "ppu.hpp"
+#include "timer.hpp"
 
 class cpu_t {
     class control_unit_t {
         memory_t &m_memory;
+        timer_t &m_delay_timer;
+        timer_t &m_sound_timer;
         bus_t &m_bus;
         address_decoder_t &m_address_decoder;
 
       public:
         control_unit_t(memory_t &memory,
+                       timer_t &delay_timer,
+                       timer_t &sound_timer,
                        bus_t &bus,
                        address_decoder_t &address_decoder);
         void write(uint16_t addr, uint8_t val);
@@ -28,11 +33,8 @@ class cpu_t {
     uint16_t m_PC = constants::ROM_OFFSET;
     uint16_t m_SP =
         constants::MEM_SIZE - sizeof(uint16_t) * constants::STACK_SIZE;
-    uint8_t m_DT = 0;
-    uint8_t m_ST = 0;
 
     uint64_t m_ticks = 0;
-    uint64_t m_timer_ticks = 0;
 
     uint16_t read_opcode();
     void push_pc_to_stack();
@@ -43,6 +45,8 @@ class cpu_t {
   public:
     cpu_t(memory_t &memory,
           ppu_t &ppu,
+          timer_t &delay_timer,
+          timer_t &sound_timer,
           bus_t &bus,
           address_decoder_t &address_decoder);
 

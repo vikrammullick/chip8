@@ -6,7 +6,14 @@ using namespace std;
 interpreter_t::interpreter_t(const vector<char> &rom_bytes)
     : m_address_decoder(m_bus),
       m_memory(rom_bytes, m_bus),
-      m_cpu(m_memory, m_ppu, m_bus, m_address_decoder) {
+      m_delay_timer(m_bus, constants::DELAY_TIMER_CHIP_SELECT),
+      m_sound_timer(m_bus, constants::SOUND_TIMER_CHIP_SELECT),
+      m_cpu(m_memory,
+            m_ppu,
+            m_delay_timer,
+            m_sound_timer,
+            m_bus,
+            m_address_decoder) {
     sdl_init_window();
 }
 
@@ -30,6 +37,8 @@ void interpreter_t::run() {
 
         m_cpu.tick();
         m_ppu.tick();
+        m_delay_timer.tick();
+        m_sound_timer.tick();
 
         sdl_poll_keyboard();
     }
