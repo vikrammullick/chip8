@@ -11,6 +11,8 @@ void address_decoder_t::select_chip() {
         m_bus.m_chip_select = 1 << constants::DELAY_TIMER_CHIP_SELECT;
     } else if (m_bus.m_addr_line == constants::SOUND_TIMER_ADDR) {
         m_bus.m_chip_select = 1 << constants::SOUND_TIMER_CHIP_SELECT;
+    } else if (m_bus.m_addr_line == constants::PPU_CLEAR_OR_READ_VBLANK_ADDR) {
+        m_bus.m_chip_select = 1 << constants::PPU_CHIP_SELECT;
     } else {
         m_bus.m_chip_select = 1 << constants::MEMORY_CHIP_SELECT;
     }

@@ -11,6 +11,7 @@
 class cpu_t {
     class control_unit_t {
         memory_t &m_memory;
+        ppu_t &m_ppu;
         keyboard_t &m_keyboard;
         timer_t &m_delay_timer;
         timer_t &m_sound_timer;
@@ -19,6 +20,7 @@ class cpu_t {
 
       public:
         control_unit_t(memory_t &memory,
+                       ppu_t &ppu,
                        keyboard_t &m_keyboard,
                        timer_t &delay_timer,
                        timer_t &sound_timer,

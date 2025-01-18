@@ -1,6 +1,6 @@
 #include "ppu.hpp"
 
-ppu_t::ppu_t() {
+ppu_t::ppu_t(bus_t &bus) : m_bus(bus) {
     m_data = new uint8_t[NUM_PIXELS];
     clear();
 }
@@ -26,6 +26,21 @@ void ppu_t::tick() {
         (constants::INTERPRETER_CLOCK_RATE / constants::PPU_CLOCK_RATE)) {
         refresh_screen();
         m_ticks = 0;
+    }
+}
+
+void ppu_t::service_request() {
+    if (!(m_bus.m_chip_select & (1 << constants::PPU_CHIP_SELECT))) {
+        return;
+    }
+
+    assert(m_bus.m_addr_line == constants::PPU_CLEAR_OR_READ_VBLANK_ADDR);
+    if (m_bus.m_rw_select & (1 << constants::READ_SELECT)) {
+        m_bus.m_data_line = m_vblank ? 0xFF : 0x00;
+    }
+
+    if (m_bus.m_rw_select & (1 << constants::WRITE_SELECT)) {
+        clear();
     }
 }
 

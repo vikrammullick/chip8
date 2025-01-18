@@ -1,6 +1,7 @@
 #ifndef PPU_H
 #define PPU_H
 
+#include "bus.hpp"
 #include "constants.hpp"
 #include "sdl_helpers.hpp"
 
@@ -8,6 +9,8 @@
 #include <vector>
 
 class ppu_t {
+    bus_t &m_bus;
+
     uint8_t *m_data;
     bool m_vblank;
 
@@ -19,7 +22,7 @@ class ppu_t {
     void refresh_screen();
 
   public:
-    ppu_t();
+    ppu_t(bus_t &bus);
     ~ppu_t();
 
     bool toggle_pixel(uint8_t screen_y, uint8_t screen_x);
@@ -27,6 +30,7 @@ class ppu_t {
     void clear();
 
     void tick();
+    void service_request();
 
     void unset_vblank() { m_vblank = false; }
 
