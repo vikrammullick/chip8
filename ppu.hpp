@@ -38,9 +38,6 @@ class ppu_t {
 
     void tick();
     void service_request();
-
-    // TODO: move out of cpu
-    void unset_vblank() { m_vblank = false; }
 };
 
 #endif // PPU_H

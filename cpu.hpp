@@ -31,7 +31,6 @@ class cpu_t {
     };
 
     control_unit_t m_control_unit;
-    ppu_t &m_ppu;
 
     std::array<uint8_t, constants::NUM_REGS> m_Vx;
     uint16_t m_I;

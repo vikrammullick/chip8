@@ -21,8 +21,7 @@ cpu_t::cpu_t(memory_t &memory,
                      delay_timer,
                      sound_timer,
                      bus,
-                     address_decoder),
-      m_ppu(ppu) {}
+                     address_decoder) {}
 
 cpu_t::control_unit_t::control_unit_t(memory_t &memory,
                                       ppu_t &ppu,
@@ -72,7 +71,6 @@ void cpu_t::tick() {
     if (++m_ticks ==
         (constants::INTERPRETER_CLOCK_RATE / constants::CPU_CLOCK_RATE)) {
         process_next_opcode();
-        m_ppu.unset_vblank();
         m_ticks = 0;
     }
 }
@@ -280,8 +278,8 @@ void cpu_t::process_next_opcode() {
     }
 
     if (match(0xD, nullopt, nullopt, nullopt)) {
-        // stall until vblank
-        if (!m_control_unit.read(constants::PPU_CLEAR_OR_READ_VBLANK_ADDR)) {
+        // stall while vblank
+        if (m_control_unit.read(constants::PPU_CLEAR_OR_READ_VBLANK_ADDR)) {
             m_PC -= 2;
             return;
         }

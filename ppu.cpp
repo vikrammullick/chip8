@@ -21,8 +21,16 @@ void ppu_t::clear() {
 }
 
 void ppu_t::tick() {
-    if (++m_ticks ==
+    m_ticks++;
+
+    if (m_ticks ==
+        constants::INTERPRETER_CLOCK_RATE / constants::CPU_CLOCK_RATE) {
+        m_vblank = true;
+    }
+
+    if (m_ticks ==
         (constants::INTERPRETER_CLOCK_RATE / constants::PPU_CLOCK_RATE)) {
+        m_vblank = false;
         refresh_screen();
         m_ticks = 0;
     }
@@ -109,6 +117,5 @@ void ppu_t::refresh_screen() {
             sdl_draw_pixel(i, j, m_data[i * constants::SCREEN_WIDTH + j]);
         }
     }
-    m_vblank = true;
     sdl_refresh_screen();
 }
