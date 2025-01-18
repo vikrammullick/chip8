@@ -18,6 +18,8 @@ void memory_t::write(uint16_t addr, uint8_t val) { m_data[addr] = val; }
 
 uint8_t memory_t::read(uint16_t addr) { return m_data[addr]; }
 
+uint8_t memory_t::ppu_dma_read(uint16_t addr) { return read(addr); }
+
 void memory_t::service_request() {
     if (!(m_bus.m_chip_select & (1 << constants::MEMORY_CHIP_SELECT))) {
         return;

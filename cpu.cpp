@@ -286,39 +286,13 @@ void cpu_t::process_next_opcode() {
             return;
         }
 
-        m_Vx[0xF] = 0;
-
-        bool should_wrap_vertical = m_Vx[y] >= constants::SCREEN_HEIGHT;
-        bool should_wrap_horizontal = m_Vx[x] >= constants::SCREEN_WIDTH;
-        for (uint8_t row = 0; row < n; ++row) {
-            uint8_t screen_y = m_Vx[y] + row;
-            if (screen_y >= constants::SCREEN_HEIGHT) {
-                if (should_wrap_vertical) {
-                    screen_y %= constants::SCREEN_HEIGHT;
-                } else {
-                    continue;
-                }
-            }
-
-            uint8_t row_sprite = m_control_unit.read(m_I + row);
-            for (uint8_t col = 0; col < 8; ++col) {
-                uint8_t screen_x = m_Vx[x] + col;
-                if (screen_x >= constants::SCREEN_WIDTH) {
-                    if (should_wrap_horizontal) {
-                        screen_x %= constants::SCREEN_WIDTH;
-                    } else {
-                        continue;
-                    }
-                }
-
-                bool toggle_pixel = row_sprite & (0b10000000 >> col);
-                if (toggle_pixel) {
-                    if (m_ppu.toggle_pixel(screen_y, screen_x)) {
-                        m_Vx[0xF] = 1;
-                    }
-                }
-            }
-        }
+        m_control_unit.write(constants::PPU_SPRITE_X, m_Vx[x]);
+        m_control_unit.write(constants::PPU_SPRITE_Y, m_Vx[y]);
+        m_control_unit.write(constants::PPU_SPRITE_ADDR_LO, m_I & 0xFF);
+        m_control_unit.write(constants::PPU_SPRITE_ADDR_HI, m_I >> 8);
+        m_control_unit.write(constants::PPU_DRAW_SPRITE_OR_READ_TOGGLED_OFF, n);
+        m_Vx[0xF] =
+            m_control_unit.read(constants::PPU_DRAW_SPRITE_OR_READ_TOGGLED_OFF);
         return;
     }
 

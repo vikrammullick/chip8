@@ -33,6 +33,11 @@ constexpr uint16_t KEYBOARD_ADDR_HI = 0x0001;
 constexpr uint16_t DELAY_TIMER_ADDR = 0x0002;
 constexpr uint16_t SOUND_TIMER_ADDR = 0x0003;
 constexpr uint16_t PPU_CLEAR_OR_READ_VBLANK_ADDR = 0x00004;
+constexpr uint16_t PPU_SPRITE_X = 0x0005;
+constexpr uint16_t PPU_SPRITE_Y = 0x0006;
+constexpr uint16_t PPU_SPRITE_ADDR_LO = 0x0007;
+constexpr uint16_t PPU_SPRITE_ADDR_HI = 0x0008;
+constexpr uint16_t PPU_DRAW_SPRITE_OR_READ_TOGGLED_OFF = 0x0009;
 
 constexpr uint16_t MEM_SIZE = 4096;
 constexpr uint8_t NUM_REGS = 16;

@@ -18,6 +18,9 @@ class memory_t {
   public:
     memory_t(const std::vector<char> &rom_bytes, bus_t &bus);
     void service_request();
+
+    // direct memory access read exposed for ppu for sprite transfer
+    uint8_t ppu_dma_read(uint16_t addr);
 };
 
 #endif // MEMORY_H
