@@ -318,32 +318,15 @@ void cpu_t::process_next_opcode() {
     }
 
     if (match(0xF, nullopt, 0x0, 0xA)) {
-        static bool waiting_key_release = false;
+        m_control_unit.write(constants::KEYBOARD_WAIT_REL_ADDR, 0);
+        uint8_t key_released =
+            m_control_unit.read(constants::KEYBOARD_WAIT_REL_ADDR);
 
-        uint16_t keyboard_state = read_keyboard();
-        if (waiting_key_release) {
-            if (keyboard_state & (0b1 << m_Vx[x])) {
-                m_PC -= 2;
-            } else {
-                waiting_key_release = false;
-            }
-            return;
+        if (key_released == constants::NULL_KEY) {
+            m_PC -= 2;
+        } else {
+            m_Vx[x] = key_released;
         }
-
-        uint8_t key_pressed = 0;
-        while (keyboard_state) {
-            if (keyboard_state & 0b1) {
-                m_Vx[x] = key_pressed;
-                m_PC -= 2;
-                waiting_key_release = true;
-                return;
-            }
-
-            keyboard_state = keyboard_state >> 1;
-            key_pressed++;
-        }
-
-        m_PC -= 2;
         return;
     }
 

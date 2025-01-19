@@ -30,15 +30,16 @@ constexpr std::array<uint8_t, NUM_FONTS * FONTSET_SIZE> FONTSET = {
 
 constexpr uint16_t KEYBOARD_ADDR_LO = 0x0000;
 constexpr uint16_t KEYBOARD_ADDR_HI = 0x0001;
-constexpr uint16_t DELAY_TIMER_ADDR = 0x0002;
-constexpr uint16_t SOUND_TIMER_ADDR = 0x0003;
-constexpr uint16_t PPU_CLEAR_OR_READ_VBLANK_ADDR = 0x00004;
-constexpr uint16_t PPU_SPRITE_X_ADDR = 0x0005;
-constexpr uint16_t PPU_SPRITE_Y_ADDR = 0x0006;
-constexpr uint16_t PPU_SPRITE_ADDR_LO = 0x0007;
-constexpr uint16_t PPU_SPRITE_ADDR_HI = 0x0008;
-constexpr uint16_t PPU_DRAW_SPRITE_OR_READ_TOGGLED_OFF_ADDR = 0x0009;
-constexpr uint16_t RNG_ADDR = 0x000A;
+constexpr uint16_t KEYBOARD_WAIT_REL_ADDR = 0x0002;
+constexpr uint16_t DELAY_TIMER_ADDR = 0x0003;
+constexpr uint16_t SOUND_TIMER_ADDR = 0x0004;
+constexpr uint16_t PPU_CLEAR_OR_READ_VBLANK_ADDR = 0x0005;
+constexpr uint16_t PPU_SPRITE_X_ADDR = 0x0006;
+constexpr uint16_t PPU_SPRITE_Y_ADDR = 0x0007;
+constexpr uint16_t PPU_SPRITE_ADDR_LO = 0x0008;
+constexpr uint16_t PPU_SPRITE_ADDR_HI = 0x0009;
+constexpr uint16_t PPU_DRAW_SPRITE_OR_READ_TOGGLED_OFF_ADDR = 0x000A;
+constexpr uint16_t RNG_ADDR = 0x000B;
 
 constexpr uint16_t MEM_SIZE = 4096;
 constexpr uint8_t NUM_REGS = 16;
@@ -64,6 +65,8 @@ constexpr uint8_t DELAY_TIMER_CHIP_SELECT = 2;
 constexpr uint8_t SOUND_TIMER_CHIP_SELECT = 3;
 constexpr uint8_t PPU_CHIP_SELECT = 4;
 constexpr uint8_t RNG_CHIP_SELECT = 5;
+
+constexpr uint8_t NULL_KEY = 0xFF;
 
 } // namespace constants
 
