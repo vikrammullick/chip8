@@ -12,12 +12,12 @@ void address_decoder_t::select_chip() {
     } else if (m_bus.m_addr_line == constants::SOUND_TIMER_ADDR) {
         m_bus.m_chip_select = 1 << constants::SOUND_TIMER_CHIP_SELECT;
     } else if (m_bus.m_addr_line == constants::PPU_CLEAR_OR_READ_VBLANK_ADDR ||
-               m_bus.m_addr_line == constants::PPU_SPRITE_X ||
-               m_bus.m_addr_line == constants::PPU_SPRITE_Y ||
+               m_bus.m_addr_line == constants::PPU_SPRITE_X_ADDR ||
+               m_bus.m_addr_line == constants::PPU_SPRITE_Y_ADDR ||
                m_bus.m_addr_line == constants::PPU_SPRITE_ADDR_LO ||
                m_bus.m_addr_line == constants::PPU_SPRITE_ADDR_HI ||
                m_bus.m_addr_line ==
-                   constants::PPU_DRAW_SPRITE_OR_READ_TOGGLED_OFF) {
+                   constants::PPU_DRAW_SPRITE_OR_READ_TOGGLED_OFF_ADDR) {
         m_bus.m_chip_select = 1 << constants::PPU_CHIP_SELECT;
     } else {
         m_bus.m_chip_select = 1 << constants::MEMORY_CHIP_SELECT;

@@ -284,13 +284,14 @@ void cpu_t::process_next_opcode() {
             return;
         }
 
-        m_control_unit.write(constants::PPU_SPRITE_X, m_Vx[x]);
-        m_control_unit.write(constants::PPU_SPRITE_Y, m_Vx[y]);
+        m_control_unit.write(constants::PPU_SPRITE_X_ADDR, m_Vx[x]);
+        m_control_unit.write(constants::PPU_SPRITE_Y_ADDR, m_Vx[y]);
         m_control_unit.write(constants::PPU_SPRITE_ADDR_LO, m_I & 0xFF);
         m_control_unit.write(constants::PPU_SPRITE_ADDR_HI, m_I >> 8);
-        m_control_unit.write(constants::PPU_DRAW_SPRITE_OR_READ_TOGGLED_OFF, n);
-        m_Vx[0xF] =
-            m_control_unit.read(constants::PPU_DRAW_SPRITE_OR_READ_TOGGLED_OFF);
+        m_control_unit.write(
+            constants::PPU_DRAW_SPRITE_OR_READ_TOGGLED_OFF_ADDR, n);
+        m_Vx[0xF] = m_control_unit.read(
+            constants::PPU_DRAW_SPRITE_OR_READ_TOGGLED_OFF_ADDR);
         return;
     }
 
