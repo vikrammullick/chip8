@@ -6,6 +6,7 @@
 #include "keyboard.hpp"
 #include "memory.hpp"
 #include "ppu.hpp"
+#include "rng.hpp"
 #include "timer.hpp"
 
 class cpu_t {
@@ -15,6 +16,7 @@ class cpu_t {
         keyboard_t &m_keyboard;
         timer_t &m_delay_timer;
         timer_t &m_sound_timer;
+        rng_t &m_rng;
         bus_t &m_bus;
         address_decoder_t &m_address_decoder;
 
@@ -24,6 +26,7 @@ class cpu_t {
                        keyboard_t &m_keyboard,
                        timer_t &delay_timer,
                        timer_t &sound_timer,
+                       rng_t &rng,
                        bus_t &bus,
                        address_decoder_t &address_decoder);
         void write(uint16_t addr, uint8_t val);
@@ -53,6 +56,7 @@ class cpu_t {
           keyboard_t &keyboard,
           timer_t &delay_timer,
           timer_t &sound_timer,
+          rng_t &rng,
           bus_t &bus,
           address_decoder_t &address_decoder);
 

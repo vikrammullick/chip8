@@ -2,11 +2,11 @@ CXX := g++
 
 CXXFLAGS := -std=c++17 -Wall -O3
 
-SRCS := run.cpp interpreter.cpp cpu.cpp ppu.cpp memory.cpp address_decoder.cpp keyboard.cpp timer.cpp sdl_helpers.cpp 
+SRCS := run.cpp interpreter.cpp cpu.cpp ppu.cpp memory.cpp address_decoder.cpp keyboard.cpp timer.cpp rng.cpp sdl_helpers.cpp 
 
 OBJS := $(SRCS:.cpp=.o)
 
-$HEADERS := interpreter.hpp cpu.hpp ppu.hpp memory.hpp address_decoder.hpp keyboard.hpp timer.hpp bus.hpp constants.hpp sdl_helpers.hpp
+$HEADERS := interpreter.hpp cpu.hpp ppu.hpp memory.hpp address_decoder.hpp keyboard.hpp timer.hpp rng.hpp bus.hpp constants.hpp sdl_helpers.hpp
 
 TARGET := chip8
 

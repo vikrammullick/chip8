@@ -19,6 +19,8 @@ void address_decoder_t::select_chip() {
                m_bus.m_addr_line ==
                    constants::PPU_DRAW_SPRITE_OR_READ_TOGGLED_OFF_ADDR) {
         m_bus.m_chip_select = 1 << constants::PPU_CHIP_SELECT;
+    } else if (m_bus.m_addr_line == constants::RNG_ADDR) {
+        m_bus.m_chip_select = 1 << constants::RNG_CHIP_SELECT;
     } else {
         m_bus.m_chip_select = 1 << constants::MEMORY_CHIP_SELECT;
     }

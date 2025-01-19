@@ -10,11 +10,13 @@ interpreter_t::interpreter_t(const vector<char> &rom_bytes)
       m_keyboard(m_bus),
       m_delay_timer(m_bus, constants::DELAY_TIMER_CHIP_SELECT),
       m_sound_timer(m_bus, constants::SOUND_TIMER_CHIP_SELECT),
+      m_rng(m_bus),
       m_cpu(m_memory,
             m_ppu,
             m_keyboard,
             m_delay_timer,
             m_sound_timer,
+            m_rng,
             m_bus,
             m_address_decoder) {
     sdl_init_window();

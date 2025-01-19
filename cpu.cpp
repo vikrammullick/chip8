@@ -3,7 +3,6 @@
 
 #include <iostream>
 #include <optional>
-#include <random>
 #include <sstream>
 
 using namespace std;
@@ -13,6 +12,7 @@ cpu_t::cpu_t(memory_t &memory,
              keyboard_t &keyboard,
              timer_t &delay_timer,
              timer_t &sound_timer,
+             rng_t &rng,
              bus_t &bus,
              address_decoder_t &address_decoder)
     : m_control_unit(memory,
@@ -20,6 +20,7 @@ cpu_t::cpu_t(memory_t &memory,
                      keyboard,
                      delay_timer,
                      sound_timer,
+                     rng,
                      bus,
                      address_decoder) {}
 
@@ -28,6 +29,7 @@ cpu_t::control_unit_t::control_unit_t(memory_t &memory,
                                       keyboard_t &keyboard,
                                       timer_t &delay_timer,
                                       timer_t &sound_timer,
+                                      rng_t &rng,
                                       bus_t &bus,
                                       address_decoder_t &address_decoder)
     : m_memory(memory),
@@ -35,6 +37,7 @@ cpu_t::control_unit_t::control_unit_t(memory_t &memory,
       m_keyboard(keyboard),
       m_delay_timer(delay_timer),
       m_sound_timer(sound_timer),
+      m_rng(rng),
       m_bus(bus),
       m_address_decoder(address_decoder) {}
 
@@ -48,6 +51,7 @@ void cpu_t::control_unit_t::write(uint16_t addr, uint8_t val) {
     m_keyboard.service_request();
     m_delay_timer.service_request();
     m_sound_timer.service_request();
+    m_rng.service_request();
     m_ppu.service_request();
     m_bus.m_rw_select = 0;
 }
@@ -61,6 +65,7 @@ uint8_t cpu_t::control_unit_t::read(uint16_t addr) {
     m_keyboard.service_request();
     m_delay_timer.service_request();
     m_sound_timer.service_request();
+    m_rng.service_request();
     m_ppu.service_request();
     uint8_t data = m_bus.m_data_line;
     m_bus.m_rw_select = 0;
@@ -268,11 +273,7 @@ void cpu_t::process_next_opcode() {
     }
 
     if (match(0xC, nullopt, nullopt, nullopt)) {
-        static std::random_device rd;
-        static std::mt19937 gen(rd());
-        static std::uniform_int_distribution<uint16_t> dis(0, 255);
-        uint8_t rand_byte = static_cast<uint8_t>(dis(gen));
-
+        uint8_t rand_byte = m_control_unit.read(constants::RNG_ADDR);
         m_Vx[x] = kk & rand_byte;
         return;
     }

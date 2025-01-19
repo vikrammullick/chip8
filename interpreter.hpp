@@ -6,6 +6,7 @@
 #include "cpu.hpp"
 #include "memory.hpp"
 #include "ppu.hpp"
+#include "rng.hpp"
 #include "timer.hpp"
 
 class interpreter_t {
@@ -16,6 +17,7 @@ class interpreter_t {
     keyboard_t m_keyboard;
     timer_t m_delay_timer;
     timer_t m_sound_timer; // TODO actually support sound
+    rng_t m_rng;
     cpu_t m_cpu;
 
   public:
