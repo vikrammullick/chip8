@@ -15,23 +15,6 @@ cpu_t::cpu_t(memory_t &memory,
              rng_t &rng,
              bus_t &bus,
              address_decoder_t &address_decoder)
-    : m_control_unit(memory,
-                     ppu,
-                     keyboard,
-                     delay_timer,
-                     sound_timer,
-                     rng,
-                     bus,
-                     address_decoder) {}
-
-cpu_t::control_unit_t::control_unit_t(memory_t &memory,
-                                      ppu_t &ppu,
-                                      keyboard_t &keyboard,
-                                      timer_t &delay_timer,
-                                      timer_t &sound_timer,
-                                      rng_t &rng,
-                                      bus_t &bus,
-                                      address_decoder_t &address_decoder)
     : m_memory(memory),
       m_ppu(ppu),
       m_keyboard(keyboard),
@@ -41,7 +24,7 @@ cpu_t::control_unit_t::control_unit_t(memory_t &memory,
       m_bus(bus),
       m_address_decoder(address_decoder) {}
 
-void cpu_t::control_unit_t::write(uint16_t addr, uint8_t val) {
+void cpu_t::control_unit_write(uint16_t addr, uint8_t val) {
     m_bus.m_data_line = val;
     m_bus.m_addr_line = addr;
     m_bus.m_rw_select = 1 << constants::WRITE_SELECT;
@@ -56,7 +39,7 @@ void cpu_t::control_unit_t::write(uint16_t addr, uint8_t val) {
     m_bus.m_rw_select = 0;
 }
 
-uint8_t cpu_t::control_unit_t::read(uint16_t addr) {
+uint8_t cpu_t::control_unit_read(uint16_t addr) {
     m_bus.m_addr_line = addr;
     m_bus.m_rw_select = 1 << constants::READ_SELECT;
     // TODO: move to combinational logic once cpu implemented at cycle level
@@ -84,8 +67,8 @@ void cpu_t::tick() {
 }
 
 uint16_t cpu_t::read_opcode() {
-    uint8_t msb = m_control_unit.read(m_PC++);
-    uint8_t lsb = m_control_unit.read(m_PC++);
+    uint8_t msb = control_unit_read(m_PC++);
+    uint8_t lsb = control_unit_read(m_PC++);
 
     return (msb << 8) | lsb;
 }
@@ -123,14 +106,14 @@ void cpu_t::process_next_opcode() {
     };
 
     if (match(0x0, 0x0, 0xE, 0x0)) {
-        m_control_unit.write(constants::PPU_CLEAR_OR_READ_VBLANK_ADDR, 0);
+        control_unit_write(constants::PPU_CLEAR_OR_READ_VBLANK_ADDR, 0);
         return;
     }
 
     if (match(0x0, 0x0, 0xE, 0xE)) {
-        m_PC = m_control_unit.read(--m_SP);
+        m_PC = control_unit_read(--m_SP);
         m_PC = m_PC << 8;
-        m_PC |= m_control_unit.read(--m_SP);
+        m_PC |= control_unit_read(--m_SP);
         return;
     }
 
@@ -146,8 +129,8 @@ void cpu_t::process_next_opcode() {
     }
 
     if (match(0x2, nullopt, nullopt, nullopt)) {
-        m_control_unit.write(m_SP++, m_PC & 0xFF);
-        m_control_unit.write(m_SP++, m_PC >> 8);
+        control_unit_write(m_SP++, m_PC & 0xFF);
+        control_unit_write(m_SP++, m_PC >> 8);
         m_PC = nnn;
         return;
     }
@@ -261,32 +244,32 @@ void cpu_t::process_next_opcode() {
     }
 
     if (match(0xC, nullopt, nullopt, nullopt)) {
-        uint8_t rand_byte = m_control_unit.read(constants::RNG_ADDR);
+        uint8_t rand_byte = control_unit_read(constants::RNG_ADDR);
         m_Vx[x] = kk & rand_byte;
         return;
     }
 
     if (match(0xD, nullopt, nullopt, nullopt)) {
         // stall while vblank
-        if (m_control_unit.read(constants::PPU_CLEAR_OR_READ_VBLANK_ADDR)) {
+        if (control_unit_read(constants::PPU_CLEAR_OR_READ_VBLANK_ADDR)) {
             m_PC -= 2;
             return;
         }
 
-        m_control_unit.write(constants::PPU_SPRITE_X_ADDR, m_Vx[x]);
-        m_control_unit.write(constants::PPU_SPRITE_Y_ADDR, m_Vx[y]);
-        m_control_unit.write(constants::PPU_SPRITE_ADDR_LO, m_I & 0xFF);
-        m_control_unit.write(constants::PPU_SPRITE_ADDR_HI, m_I >> 8);
-        m_control_unit.write(
-            constants::PPU_DRAW_SPRITE_OR_READ_TOGGLED_OFF_ADDR, n);
-        m_Vx[0xF] = m_control_unit.read(
+        control_unit_write(constants::PPU_SPRITE_X_ADDR, m_Vx[x]);
+        control_unit_write(constants::PPU_SPRITE_Y_ADDR, m_Vx[y]);
+        control_unit_write(constants::PPU_SPRITE_ADDR_LO, m_I & 0xFF);
+        control_unit_write(constants::PPU_SPRITE_ADDR_HI, m_I >> 8);
+        control_unit_write(constants::PPU_DRAW_SPRITE_OR_READ_TOGGLED_OFF_ADDR,
+                           n);
+        m_Vx[0xF] = control_unit_read(
             constants::PPU_DRAW_SPRITE_OR_READ_TOGGLED_OFF_ADDR);
         return;
     }
 
     if (match(0xE, nullopt, 0x9, 0xE)) {
-        uint8_t keyboard_lo = m_control_unit.read(constants::KEYBOARD_ADDR_LO);
-        uint8_t keyboard_hi = m_control_unit.read(constants::KEYBOARD_ADDR_HI);
+        uint8_t keyboard_lo = control_unit_read(constants::KEYBOARD_ADDR_LO);
+        uint8_t keyboard_hi = control_unit_read(constants::KEYBOARD_ADDR_HI);
         uint16_t keyboard_state = (keyboard_hi << 8) | keyboard_lo;
         if (keyboard_state & (0b00000001 << m_Vx[x])) {
             m_PC += 2;
@@ -295,8 +278,8 @@ void cpu_t::process_next_opcode() {
     }
 
     if (match(0xE, nullopt, 0xA, 0x1)) {
-        uint8_t keyboard_lo = m_control_unit.read(constants::KEYBOARD_ADDR_LO);
-        uint8_t keyboard_hi = m_control_unit.read(constants::KEYBOARD_ADDR_HI);
+        uint8_t keyboard_lo = control_unit_read(constants::KEYBOARD_ADDR_LO);
+        uint8_t keyboard_hi = control_unit_read(constants::KEYBOARD_ADDR_HI);
         uint16_t keyboard_state = (keyboard_hi << 8) | keyboard_lo;
         if (!(keyboard_state & (0b00000001 << m_Vx[x]))) {
             m_PC += 2;
@@ -305,14 +288,14 @@ void cpu_t::process_next_opcode() {
     }
 
     if (match(0xF, nullopt, 0x0, 0x7)) {
-        m_Vx[x] = m_control_unit.read(constants::DELAY_TIMER_ADDR);
+        m_Vx[x] = control_unit_read(constants::DELAY_TIMER_ADDR);
         return;
     }
 
     if (match(0xF, nullopt, 0x0, 0xA)) {
-        m_control_unit.write(constants::KEYBOARD_WAIT_REL_ADDR, 0);
+        control_unit_write(constants::KEYBOARD_WAIT_REL_ADDR, 0);
         uint8_t key_released =
-            m_control_unit.read(constants::KEYBOARD_WAIT_REL_ADDR);
+            control_unit_read(constants::KEYBOARD_WAIT_REL_ADDR);
 
         if (key_released == constants::NULL_KEY) {
             m_PC -= 2;
@@ -323,12 +306,12 @@ void cpu_t::process_next_opcode() {
     }
 
     if (match(0xF, nullopt, 0x1, 0x5)) {
-        m_control_unit.write(constants::DELAY_TIMER_ADDR, m_Vx[x]);
+        control_unit_write(constants::DELAY_TIMER_ADDR, m_Vx[x]);
         return;
     }
 
     if (match(0xF, nullopt, 0x1, 0x8)) {
-        m_control_unit.write(constants::SOUND_TIMER_ADDR, m_Vx[x]);
+        control_unit_write(constants::SOUND_TIMER_ADDR, m_Vx[x]);
         return;
     }
 
@@ -344,24 +327,24 @@ void cpu_t::process_next_opcode() {
 
     if (match(0xF, nullopt, 0x3, 0x3)) {
         uint16_t val = m_Vx[x];
-        m_control_unit.write(m_I + 2, val % 10);
+        control_unit_write(m_I + 2, val % 10);
         val /= 10;
-        m_control_unit.write(m_I + 1, val % 10);
+        control_unit_write(m_I + 1, val % 10);
         val /= 10;
-        m_control_unit.write(m_I, val % 10);
+        control_unit_write(m_I, val % 10);
         return;
     }
 
     if (match(0xF, nullopt, 0x5, 0x5)) {
         for (uint8_t offset = 0; offset <= x; ++offset) {
-            m_control_unit.write(m_I++, m_Vx[offset]);
+            control_unit_write(m_I++, m_Vx[offset]);
         }
         return;
     }
 
     if (match(0xF, nullopt, 0x6, 0x5)) {
         for (uint8_t offset = 0; offset <= x; ++offset) {
-            m_Vx[offset] = m_control_unit.read(m_I++);
+            m_Vx[offset] = control_unit_read(m_I++);
         }
         return;
     }

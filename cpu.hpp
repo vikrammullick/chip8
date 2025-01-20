@@ -10,30 +10,14 @@
 #include "timer.hpp"
 
 class cpu_t {
-    class control_unit_t {
-        memory_t &m_memory;
-        ppu_t &m_ppu;
-        keyboard_t &m_keyboard;
-        timer_t &m_delay_timer;
-        timer_t &m_sound_timer;
-        rng_t &m_rng;
-        bus_t &m_bus;
-        address_decoder_t &m_address_decoder;
-
-      public:
-        control_unit_t(memory_t &memory,
-                       ppu_t &ppu,
-                       keyboard_t &m_keyboard,
-                       timer_t &delay_timer,
-                       timer_t &sound_timer,
-                       rng_t &rng,
-                       bus_t &bus,
-                       address_decoder_t &address_decoder);
-        void write(uint16_t addr, uint8_t val);
-        uint8_t read(uint16_t addr);
-    };
-
-    control_unit_t m_control_unit;
+    memory_t &m_memory;
+    ppu_t &m_ppu;
+    keyboard_t &m_keyboard;
+    timer_t &m_delay_timer;
+    timer_t &m_sound_timer;
+    rng_t &m_rng;
+    bus_t &m_bus;
+    address_decoder_t &m_address_decoder;
 
     std::array<uint8_t, constants::NUM_REGS> m_Vx;
     uint16_t m_I;
@@ -42,6 +26,9 @@ class cpu_t {
         constants::MEM_SIZE - sizeof(uint16_t) * constants::STACK_SIZE;
 
     uint64_t m_ticks = 0;
+
+    void control_unit_write(uint16_t addr, uint8_t val);
+    uint8_t control_unit_read(uint16_t addr);
 
     uint16_t read_opcode();
 
