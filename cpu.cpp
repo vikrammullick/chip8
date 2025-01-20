@@ -73,9 +73,12 @@ uint8_t cpu_t::control_unit_t::read(uint16_t addr) {
 }
 
 void cpu_t::tick() {
+    if (m_ticks == 0) {
+        process_next_opcode();
+    }
+
     if (++m_ticks ==
         (constants::INTERPRETER_CLOCK_RATE / constants::CPU_CLOCK_RATE)) {
-        process_next_opcode();
         m_ticks = 0;
     }
 }

@@ -5,12 +5,14 @@ timer_t::timer_t(bus_t &bus, uint8_t chip_select)
     : m_bus(bus), m_chip_select(chip_select) {}
 
 void timer_t::tick() {
-    if (++m_ticks ==
-        (constants::INTERPRETER_CLOCK_RATE / constants::DT_ST_CLOCK_RATE)) {
+    if (m_ticks == 0) {
         if (m_counter) {
             --m_counter;
         }
+    }
 
+    if (++m_ticks ==
+        (constants::INTERPRETER_CLOCK_RATE / constants::DT_ST_CLOCK_RATE)) {
         m_ticks = 0;
     }
 }

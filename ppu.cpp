@@ -21,17 +21,18 @@ void ppu_t::clear() {
 }
 
 void ppu_t::tick() {
-    m_ticks++;
+    if (m_ticks == 0) {
+        m_vblank = false;
+        refresh_screen();
+    }
 
     if (m_ticks ==
         constants::INTERPRETER_CLOCK_RATE / constants::CPU_CLOCK_RATE) {
         m_vblank = true;
     }
 
-    if (m_ticks ==
+    if (++m_ticks ==
         (constants::INTERPRETER_CLOCK_RATE / constants::PPU_CLOCK_RATE)) {
-        m_vblank = false;
-        refresh_screen();
         m_ticks = 0;
     }
 }
