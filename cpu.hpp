@@ -27,6 +27,9 @@ class cpu_t {
 
     uint64_t m_ticks = 0;
 
+    // inter-cycle history
+    uint8_t m_bytes[2];
+
     void control_unit_write(uint16_t addr, uint8_t val);
     void control_unit_read(uint16_t addr, uint8_t &ret);
 

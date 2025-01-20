@@ -66,7 +66,8 @@ void cpu_t::tick() {
 }
 
 void cpu_t::process_next_opcode() {
-    uint8_t msb, lsb;
+    uint8_t &msb = m_bytes[0];
+    uint8_t &lsb = m_bytes[1];
     control_unit_read(m_PC, msb);
     m_PC++;
     control_unit_read(m_PC, lsb);
@@ -112,7 +113,8 @@ void cpu_t::process_opcode(uint16_t opcode) {
     }
 
     if (match(0x0, 0x0, 0xE, 0xE)) {
-        uint8_t msb, lsb;
+        uint8_t &msb = m_bytes[0];
+        uint8_t &lsb = m_bytes[1];
         m_SP--;
         control_unit_read(m_SP, msb);
         m_SP--;
@@ -250,7 +252,7 @@ void cpu_t::process_opcode(uint16_t opcode) {
     }
 
     if (match(0xC, nullopt, nullopt, nullopt)) {
-        uint8_t rand_byte;
+        uint8_t &rand_byte = m_bytes[0];
         control_unit_read(constants::RNG_ADDR, rand_byte);
         m_Vx[x] = kk & rand_byte;
         return;
@@ -258,7 +260,7 @@ void cpu_t::process_opcode(uint16_t opcode) {
 
     if (match(0xD, nullopt, nullopt, nullopt)) {
         // stall while vblank
-        uint8_t vblank;
+        uint8_t &vblank = m_bytes[0];
         control_unit_read(constants::PPU_CLEAR_OR_READ_VBLANK_ADDR, vblank);
         if (vblank) {
             m_PC -= 2;
@@ -277,7 +279,8 @@ void cpu_t::process_opcode(uint16_t opcode) {
     }
 
     if (match(0xE, nullopt, 0x9, 0xE)) {
-        uint8_t keyboard_lo, keyboard_hi;
+        uint8_t &keyboard_lo = m_bytes[0];
+        uint8_t &keyboard_hi = m_bytes[1];
         control_unit_read(constants::KEYBOARD_ADDR_LO, keyboard_lo);
         control_unit_read(constants::KEYBOARD_ADDR_HI, keyboard_hi);
         uint16_t keyboard_state = (keyboard_hi << 8) | keyboard_lo;
@@ -288,7 +291,8 @@ void cpu_t::process_opcode(uint16_t opcode) {
     }
 
     if (match(0xE, nullopt, 0xA, 0x1)) {
-        uint8_t keyboard_lo, keyboard_hi;
+        uint8_t &keyboard_lo = m_bytes[0];
+        uint8_t &keyboard_hi = m_bytes[1];
         control_unit_read(constants::KEYBOARD_ADDR_LO, keyboard_lo);
         control_unit_read(constants::KEYBOARD_ADDR_HI, keyboard_hi);
         uint16_t keyboard_state = (keyboard_hi << 8) | keyboard_lo;
@@ -304,7 +308,7 @@ void cpu_t::process_opcode(uint16_t opcode) {
     }
 
     if (match(0xF, nullopt, 0x0, 0xA)) {
-        uint8_t key_released;
+        uint8_t &key_released = m_bytes[0];
         control_unit_write(constants::KEYBOARD_WAIT_REL_ADDR, 0);
         control_unit_read(constants::KEYBOARD_WAIT_REL_ADDR, key_released);
 
