@@ -30,9 +30,8 @@ class cpu_t {
     void control_unit_write(uint16_t addr, uint8_t val);
     void control_unit_read(uint16_t addr, uint8_t &ret);
 
-    uint16_t read_opcode();
-
     void process_next_opcode();
+    void process_opcode(uint16_t opcode);
 
   public:
     cpu_t(memory_t &memory,

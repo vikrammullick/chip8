@@ -65,17 +65,16 @@ void cpu_t::tick() {
     }
 }
 
-uint16_t cpu_t::read_opcode() {
+void cpu_t::process_next_opcode() {
     uint8_t msb, lsb;
     control_unit_read(m_PC++, msb);
     control_unit_read(m_PC++, lsb);
 
-    return (msb << 8) | lsb;
+    uint16_t opcode = (msb << 8) | lsb;
+    process_opcode(opcode);
 }
 
-void cpu_t::process_next_opcode() {
-    uint16_t opcode = read_opcode();
-
+void cpu_t::process_opcode(uint16_t opcode) {
     uint8_t n = opcode & 0x000F;
     uint8_t x = (opcode >> 8) & 0x000F;
     uint8_t y = (opcode >> 4) & 0x000F;
