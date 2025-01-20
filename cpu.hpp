@@ -44,9 +44,6 @@ class cpu_t {
     uint64_t m_ticks = 0;
 
     uint16_t read_opcode();
-    uint16_t read_keyboard();
-    void push_pc_to_stack();
-    void pop_pc_from_stack();
 
     void process_next_opcode();
 

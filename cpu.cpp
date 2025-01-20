@@ -87,24 +87,6 @@ uint16_t cpu_t::read_opcode() {
     return (msb << 8) | lsb;
 }
 
-uint16_t cpu_t::read_keyboard() {
-    uint8_t keyboard_lo = m_control_unit.read(constants::KEYBOARD_ADDR_LO);
-    uint8_t keyboard_hi = m_control_unit.read(constants::KEYBOARD_ADDR_HI);
-
-    return (keyboard_hi << 8) | keyboard_lo;
-}
-
-void cpu_t::push_pc_to_stack() {
-    m_control_unit.write(m_SP++, m_PC & 0xFF);
-    m_control_unit.write(m_SP++, m_PC >> 8);
-}
-
-void cpu_t::pop_pc_from_stack() {
-    m_PC = m_control_unit.read(--m_SP);
-    m_PC = m_PC << 8;
-    m_PC |= m_control_unit.read(--m_SP);
-}
-
 void cpu_t::process_next_opcode() {
     uint16_t opcode = read_opcode();
 
@@ -143,7 +125,9 @@ void cpu_t::process_next_opcode() {
     }
 
     if (match(0x0, 0x0, 0xE, 0xE)) {
-        pop_pc_from_stack();
+        m_PC = m_control_unit.read(--m_SP);
+        m_PC = m_PC << 8;
+        m_PC |= m_control_unit.read(--m_SP);
         return;
     }
 
@@ -159,7 +143,8 @@ void cpu_t::process_next_opcode() {
     }
 
     if (match(0x2, nullopt, nullopt, nullopt)) {
-        push_pc_to_stack();
+        m_control_unit.write(m_SP++, m_PC & 0xFF);
+        m_control_unit.write(m_SP++, m_PC >> 8);
         m_PC = nnn;
         return;
     }
@@ -297,7 +282,9 @@ void cpu_t::process_next_opcode() {
     }
 
     if (match(0xE, nullopt, 0x9, 0xE)) {
-        uint16_t keyboard_state = read_keyboard();
+        uint8_t keyboard_lo = m_control_unit.read(constants::KEYBOARD_ADDR_LO);
+        uint8_t keyboard_hi = m_control_unit.read(constants::KEYBOARD_ADDR_HI);
+        uint16_t keyboard_state = (keyboard_hi << 8) | keyboard_lo;
         if (keyboard_state & (0b00000001 << m_Vx[x])) {
             m_PC += 2;
         }
@@ -305,7 +292,9 @@ void cpu_t::process_next_opcode() {
     }
 
     if (match(0xE, nullopt, 0xA, 0x1)) {
-        uint16_t keyboard_state = read_keyboard();
+        uint8_t keyboard_lo = m_control_unit.read(constants::KEYBOARD_ADDR_LO);
+        uint8_t keyboard_hi = m_control_unit.read(constants::KEYBOARD_ADDR_HI);
+        uint16_t keyboard_state = (keyboard_hi << 8) | keyboard_lo;
         if (!(keyboard_state & (0b00000001 << m_Vx[x]))) {
             m_PC += 2;
         }
