@@ -67,8 +67,10 @@ void cpu_t::tick() {
 
 void cpu_t::process_next_opcode() {
     uint8_t msb, lsb;
-    control_unit_read(m_PC++, msb);
-    control_unit_read(m_PC++, lsb);
+    control_unit_read(m_PC, msb);
+    m_PC++;
+    control_unit_read(m_PC, lsb);
+    m_PC++;
 
     uint16_t opcode = (msb << 8) | lsb;
     process_opcode(opcode);
@@ -111,8 +113,10 @@ void cpu_t::process_opcode(uint16_t opcode) {
 
     if (match(0x0, 0x0, 0xE, 0xE)) {
         uint8_t msb, lsb;
-        control_unit_read(--m_SP, msb);
-        control_unit_read(--m_SP, lsb);
+        m_SP--;
+        control_unit_read(m_SP, msb);
+        m_SP--;
+        control_unit_read(m_SP, lsb);
         m_PC = (msb << 8) | lsb;
         return;
     }
@@ -129,8 +133,10 @@ void cpu_t::process_opcode(uint16_t opcode) {
     }
 
     if (match(0x2, nullopt, nullopt, nullopt)) {
-        control_unit_write(m_SP++, m_PC & 0xFF);
-        control_unit_write(m_SP++, m_PC >> 8);
+        control_unit_write(m_SP, m_PC & 0xFF);
+        m_SP++;
+        control_unit_write(m_SP, m_PC >> 8);
+        m_SP++;
         m_PC = nnn;
         return;
     }
@@ -342,14 +348,16 @@ void cpu_t::process_opcode(uint16_t opcode) {
 
     if (match(0xF, nullopt, 0x5, 0x5)) {
         for (uint8_t offset = 0; offset <= x; ++offset) {
-            control_unit_write(m_I++, m_Vx[offset]);
+            control_unit_write(m_I, m_Vx[offset]);
+            m_I++;
         }
         return;
     }
 
     if (match(0xF, nullopt, 0x6, 0x5)) {
         for (uint8_t offset = 0; offset <= x; ++offset) {
-            control_unit_read(m_I++, m_Vx[offset]);
+            control_unit_read(m_I, m_Vx[offset]);
+            m_I++;
         }
         return;
     }
