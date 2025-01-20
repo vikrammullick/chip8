@@ -28,7 +28,7 @@ class cpu_t {
     uint64_t m_ticks = 0;
 
     void control_unit_write(uint16_t addr, uint8_t val);
-    uint8_t control_unit_read(uint16_t addr);
+    void control_unit_read(uint16_t addr, uint8_t &ret);
 
     uint16_t read_opcode();
 

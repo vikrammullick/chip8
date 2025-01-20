@@ -39,7 +39,7 @@ void cpu_t::control_unit_write(uint16_t addr, uint8_t val) {
     m_bus.m_rw_select = 0;
 }
 
-uint8_t cpu_t::control_unit_read(uint16_t addr) {
+void cpu_t::control_unit_read(uint16_t addr, uint8_t &ret) {
     m_bus.m_addr_line = addr;
     m_bus.m_rw_select = 1 << constants::READ_SELECT;
     // TODO: move to combinational logic once cpu implemented at cycle level
@@ -50,9 +50,8 @@ uint8_t cpu_t::control_unit_read(uint16_t addr) {
     m_sound_timer.service_request();
     m_rng.service_request();
     m_ppu.service_request();
-    uint8_t data = m_bus.m_data_line;
+    ret = m_bus.m_data_line;
     m_bus.m_rw_select = 0;
-    return data;
 }
 
 void cpu_t::tick() {
@@ -67,8 +66,9 @@ void cpu_t::tick() {
 }
 
 uint16_t cpu_t::read_opcode() {
-    uint8_t msb = control_unit_read(m_PC++);
-    uint8_t lsb = control_unit_read(m_PC++);
+    uint8_t msb, lsb;
+    control_unit_read(m_PC++, msb);
+    control_unit_read(m_PC++, lsb);
 
     return (msb << 8) | lsb;
 }
@@ -111,9 +111,10 @@ void cpu_t::process_next_opcode() {
     }
 
     if (match(0x0, 0x0, 0xE, 0xE)) {
-        m_PC = control_unit_read(--m_SP);
-        m_PC = m_PC << 8;
-        m_PC |= control_unit_read(--m_SP);
+        uint8_t msb, lsb;
+        control_unit_read(--m_SP, msb);
+        control_unit_read(--m_SP, lsb);
+        m_PC = (msb << 8) | lsb;
         return;
     }
 
@@ -244,14 +245,17 @@ void cpu_t::process_next_opcode() {
     }
 
     if (match(0xC, nullopt, nullopt, nullopt)) {
-        uint8_t rand_byte = control_unit_read(constants::RNG_ADDR);
+        uint8_t rand_byte;
+        control_unit_read(constants::RNG_ADDR, rand_byte);
         m_Vx[x] = kk & rand_byte;
         return;
     }
 
     if (match(0xD, nullopt, nullopt, nullopt)) {
         // stall while vblank
-        if (control_unit_read(constants::PPU_CLEAR_OR_READ_VBLANK_ADDR)) {
+        uint8_t vblank;
+        control_unit_read(constants::PPU_CLEAR_OR_READ_VBLANK_ADDR, vblank);
+        if (vblank) {
             m_PC -= 2;
             return;
         }
@@ -262,14 +266,15 @@ void cpu_t::process_next_opcode() {
         control_unit_write(constants::PPU_SPRITE_ADDR_HI, m_I >> 8);
         control_unit_write(constants::PPU_DRAW_SPRITE_OR_READ_TOGGLED_OFF_ADDR,
                            n);
-        m_Vx[0xF] = control_unit_read(
-            constants::PPU_DRAW_SPRITE_OR_READ_TOGGLED_OFF_ADDR);
+        control_unit_read(constants::PPU_DRAW_SPRITE_OR_READ_TOGGLED_OFF_ADDR,
+                          m_Vx[0xF]);
         return;
     }
 
     if (match(0xE, nullopt, 0x9, 0xE)) {
-        uint8_t keyboard_lo = control_unit_read(constants::KEYBOARD_ADDR_LO);
-        uint8_t keyboard_hi = control_unit_read(constants::KEYBOARD_ADDR_HI);
+        uint8_t keyboard_lo, keyboard_hi;
+        control_unit_read(constants::KEYBOARD_ADDR_LO, keyboard_lo);
+        control_unit_read(constants::KEYBOARD_ADDR_HI, keyboard_hi);
         uint16_t keyboard_state = (keyboard_hi << 8) | keyboard_lo;
         if (keyboard_state & (0b00000001 << m_Vx[x])) {
             m_PC += 2;
@@ -278,8 +283,9 @@ void cpu_t::process_next_opcode() {
     }
 
     if (match(0xE, nullopt, 0xA, 0x1)) {
-        uint8_t keyboard_lo = control_unit_read(constants::KEYBOARD_ADDR_LO);
-        uint8_t keyboard_hi = control_unit_read(constants::KEYBOARD_ADDR_HI);
+        uint8_t keyboard_lo, keyboard_hi;
+        control_unit_read(constants::KEYBOARD_ADDR_LO, keyboard_lo);
+        control_unit_read(constants::KEYBOARD_ADDR_HI, keyboard_hi);
         uint16_t keyboard_state = (keyboard_hi << 8) | keyboard_lo;
         if (!(keyboard_state & (0b00000001 << m_Vx[x]))) {
             m_PC += 2;
@@ -288,14 +294,14 @@ void cpu_t::process_next_opcode() {
     }
 
     if (match(0xF, nullopt, 0x0, 0x7)) {
-        m_Vx[x] = control_unit_read(constants::DELAY_TIMER_ADDR);
+        control_unit_read(constants::DELAY_TIMER_ADDR, m_Vx[x]);
         return;
     }
 
     if (match(0xF, nullopt, 0x0, 0xA)) {
+        uint8_t key_released;
         control_unit_write(constants::KEYBOARD_WAIT_REL_ADDR, 0);
-        uint8_t key_released =
-            control_unit_read(constants::KEYBOARD_WAIT_REL_ADDR);
+        control_unit_read(constants::KEYBOARD_WAIT_REL_ADDR, key_released);
 
         if (key_released == constants::NULL_KEY) {
             m_PC -= 2;
@@ -344,7 +350,7 @@ void cpu_t::process_next_opcode() {
 
     if (match(0xF, nullopt, 0x6, 0x5)) {
         for (uint8_t offset = 0; offset <= x; ++offset) {
-            m_Vx[offset] = control_unit_read(m_I++);
+            control_unit_read(m_I++, m_Vx[offset]);
         }
         return;
     }
