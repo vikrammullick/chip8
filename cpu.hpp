@@ -9,6 +9,8 @@
 #include "rng.hpp"
 #include "timer.hpp"
 
+#include <queue>
+
 class cpu_t {
     memory_t &m_memory;
     ppu_t &m_ppu;
@@ -27,14 +29,17 @@ class cpu_t {
 
     uint64_t m_ticks = 0;
 
+    std::queue<std::function<void()>> m_handlers;
+    void add_handler(std::function<void()> &&handler);
+
     // inter-cycle history
     uint8_t m_bytes[2];
 
-    void control_unit_write(uint16_t addr, uint8_t val);
-    void control_unit_read(uint16_t addr, uint8_t &ret);
+    void add_control_unit_write(const uint16_t &addr, const uint8_t &val);
+    void add_control_unit_read(const uint16_t &addr, uint8_t &ret);
 
-    void process_next_opcode();
-    void process_opcode(uint16_t opcode);
+    void add_read_opcode();
+    void add_opcode(uint16_t opcode);
 
   public:
     cpu_t(memory_t &memory,

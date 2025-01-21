@@ -24,39 +24,52 @@ cpu_t::cpu_t(memory_t &memory,
       m_bus(bus),
       m_address_decoder(address_decoder) {}
 
-void cpu_t::control_unit_write(uint16_t addr, uint8_t val) {
-    m_bus.m_data_line = val;
-    m_bus.m_addr_line = addr;
-    m_bus.m_rw_select = 1 << constants::WRITE_SELECT;
-    // TODO: move to combinational logic once cpu implemented at cycle level
-    m_address_decoder.select_chip();
-    m_memory.service_request();
-    m_keyboard.service_request();
-    m_delay_timer.service_request();
-    m_sound_timer.service_request();
-    m_rng.service_request();
-    m_ppu.service_request();
-    m_bus.m_rw_select = 0;
+void cpu_t::add_control_unit_write(const uint16_t &addr, const uint8_t &val) {
+    add_handler([this, &addr, &val]() {
+        m_bus.m_data_line = val;
+        m_bus.m_addr_line = addr;
+        m_bus.m_rw_select = 1 << constants::WRITE_SELECT;
+        // TODO: move to combinational logic once cpu implemented at cycle level
+        m_address_decoder.select_chip();
+        m_memory.service_request();
+        m_keyboard.service_request();
+        m_delay_timer.service_request();
+        m_sound_timer.service_request();
+        m_rng.service_request();
+        m_ppu.service_request();
+        m_bus.m_rw_select = 0;
+    });
 }
 
-void cpu_t::control_unit_read(uint16_t addr, uint8_t &ret) {
-    m_bus.m_addr_line = addr;
-    m_bus.m_rw_select = 1 << constants::READ_SELECT;
-    // TODO: move to combinational logic once cpu implemented at cycle level
-    m_address_decoder.select_chip();
-    m_memory.service_request();
-    m_keyboard.service_request();
-    m_delay_timer.service_request();
-    m_sound_timer.service_request();
-    m_rng.service_request();
-    m_ppu.service_request();
-    ret = m_bus.m_data_line;
-    m_bus.m_rw_select = 0;
+void cpu_t::add_control_unit_read(const uint16_t &addr, uint8_t &ret) {
+    add_handler([this, &addr, &ret]() {
+        m_bus.m_addr_line = addr;
+        m_bus.m_rw_select = 1 << constants::READ_SELECT;
+        // TODO: move to combinational logic once cpu implemented at cycle level
+        m_address_decoder.select_chip();
+        m_memory.service_request();
+        m_keyboard.service_request();
+        m_delay_timer.service_request();
+        m_sound_timer.service_request();
+        m_rng.service_request();
+        m_ppu.service_request();
+        ret = m_bus.m_data_line;
+        m_bus.m_rw_select = 0;
+    });
+}
+
+void cpu_t::add_handler(std::function<void()> &&handler) {
+    m_handlers.push(std::move(handler));
 }
 
 void cpu_t::tick() {
     if (m_ticks == 0) {
-        process_next_opcode();
+        add_read_opcode();
+    }
+
+    while (!m_handlers.empty()) {
+        m_handlers.front()();
+        m_handlers.pop();
     }
 
     if (++m_ticks ==
@@ -65,19 +78,20 @@ void cpu_t::tick() {
     }
 }
 
-void cpu_t::process_next_opcode() {
+void cpu_t::add_read_opcode() {
     uint8_t &msb = m_bytes[0];
     uint8_t &lsb = m_bytes[1];
-    control_unit_read(m_PC, msb);
-    m_PC++;
-    control_unit_read(m_PC, lsb);
-    m_PC++;
-
-    uint16_t opcode = (msb << 8) | lsb;
-    process_opcode(opcode);
+    add_control_unit_read(m_PC, msb);
+    add_handler([this]() { m_PC++; });
+    add_control_unit_read(m_PC, lsb);
+    add_handler([this, &msb, &lsb]() {
+        m_PC++;
+        uint16_t opcode = (msb << 8) | lsb;
+        add_opcode(opcode);
+    });
 }
 
-void cpu_t::process_opcode(uint16_t opcode) {
+void cpu_t::add_opcode(uint16_t opcode) {
     uint8_t n = opcode & 0x000F;
     uint8_t x = (opcode >> 8) & 0x000F;
     uint8_t y = (opcode >> 4) & 0x000F;
@@ -108,18 +122,18 @@ void cpu_t::process_opcode(uint16_t opcode) {
     };
 
     if (match(0x0, 0x0, 0xE, 0x0)) {
-        control_unit_write(constants::PPU_CLEAR_OR_READ_VBLANK_ADDR, 0);
+        add_control_unit_write(constants::PPU_CLEAR_OR_READ_VBLANK_ADDR, 0);
         return;
     }
 
     if (match(0x0, 0x0, 0xE, 0xE)) {
         uint8_t &msb = m_bytes[0];
         uint8_t &lsb = m_bytes[1];
-        m_SP--;
-        control_unit_read(m_SP, msb);
-        m_SP--;
-        control_unit_read(m_SP, lsb);
-        m_PC = (msb << 8) | lsb;
+        add_handler([this]() { m_SP--; });
+        add_control_unit_read(m_SP, msb);
+        add_handler([this]() { m_SP--; });
+        add_control_unit_read(m_SP, lsb);
+        add_handler([this, &msb, &lsb]() { m_PC = (msb << 8) | lsb; });
         return;
     }
 
@@ -130,238 +144,299 @@ void cpu_t::process_opcode(uint16_t opcode) {
     }
 
     if (match(0x1, nullopt, nullopt, nullopt)) {
-        m_PC = nnn;
+        add_handler([this, nnn]() { m_PC = nnn; });
         return;
     }
 
     if (match(0x2, nullopt, nullopt, nullopt)) {
-        control_unit_write(m_SP, m_PC & 0xFF);
-        m_SP++;
-        control_unit_write(m_SP, m_PC >> 8);
-        m_SP++;
-        m_PC = nnn;
+        uint8_t *pc_bytes = reinterpret_cast<uint8_t *>(&m_PC);
+
+        add_control_unit_write(m_SP, pc_bytes[0]);
+        add_handler([this]() { m_SP++; });
+        add_control_unit_write(m_SP, pc_bytes[1]);
+        add_handler([this, nnn]() {
+            m_SP++;
+            m_PC = nnn;
+        });
         return;
     }
 
     if (match(0x3, nullopt, nullopt, nullopt)) {
-        if (m_Vx[x] == kk) {
-            m_PC += 2;
-        }
+        add_handler([this, x, kk]() {
+            if (m_Vx[x] == kk) {
+                m_PC += 2;
+            }
+        });
         return;
     }
 
     if (match(0x4, nullopt, nullopt, nullopt)) {
-        if (m_Vx[x] != kk) {
-            m_PC += 2;
-        }
+        add_handler([this, x, kk]() {
+            if (m_Vx[x] != kk) {
+                m_PC += 2;
+            }
+        });
         return;
     }
 
     if (match(0x5, nullopt, nullopt, 0x0)) {
-        if (m_Vx[x] == m_Vx[y]) {
-            m_PC += 2;
-        }
+        add_handler([this, x, y]() {
+            if (m_Vx[x] == m_Vx[y]) {
+                m_PC += 2;
+            }
+        });
         return;
     }
 
     if (match(0x6, nullopt, nullopt, nullopt)) {
-        m_Vx[x] = kk;
+        add_handler([this, x, kk]() { m_Vx[x] = kk; });
         return;
     }
 
     if (match(0x7, nullopt, nullopt, nullopt)) {
-        m_Vx[x] += kk;
+        add_handler([this, x, kk]() { m_Vx[x] += kk; });
         return;
     }
 
     if (match(0x8, nullopt, nullopt, 0x0)) {
-        m_Vx[x] = m_Vx[y];
+        add_handler([this, x, y]() { m_Vx[x] = m_Vx[y]; });
         return;
     }
 
     if (match(0x8, nullopt, nullopt, 0x1)) {
-        m_Vx[x] |= m_Vx[y];
-        m_Vx[0xF] = 0;
+        add_handler([this, x, y]() {
+            m_Vx[x] |= m_Vx[y];
+            m_Vx[0xF] = 0;
+        });
         return;
     }
 
     if (match(0x8, nullopt, nullopt, 0x2)) {
-        m_Vx[x] &= m_Vx[y];
-        m_Vx[0xF] = 0;
+        add_handler([this, x, y]() {
+            m_Vx[x] &= m_Vx[y];
+            m_Vx[0xF] = 0;
+        });
         return;
     }
 
     if (match(0x8, nullopt, nullopt, 0x3)) {
-        m_Vx[x] ^= m_Vx[y];
-        m_Vx[0xF] = 0;
+        add_handler([this, x, y]() {
+            m_Vx[x] ^= m_Vx[y];
+            m_Vx[0xF] = 0;
+        });
         return;
     }
 
     if (match(0x8, nullopt, nullopt, 0x4)) {
-        uint16_t sum = m_Vx[x] + m_Vx[y];
-        m_Vx[x] = sum & 0xFF;
-        m_Vx[0xF] = (sum > 0xFF) ? 1 : 0;
+        add_handler([this, x, y]() {
+            uint16_t sum = m_Vx[x] + m_Vx[y];
+            m_Vx[x] = sum & 0xFF;
+            m_Vx[0xF] = (sum > 0xFF) ? 1 : 0;
+        });
         return;
     }
 
     if (match(0x8, nullopt, nullopt, 0x5)) {
-        uint8_t vf = (m_Vx[x] >= m_Vx[y]) ? 1 : 0;
-        m_Vx[x] -= m_Vx[y];
-        m_Vx[0xF] = vf;
+        add_handler([this, x, y]() {
+            uint8_t vf = (m_Vx[x] >= m_Vx[y]) ? 1 : 0;
+            m_Vx[x] -= m_Vx[y];
+            m_Vx[0xF] = vf;
+        });
         return;
     }
 
     if (match(0x8, nullopt, nullopt, 0x6)) {
-        m_Vx[x] = m_Vx[y];
-        uint8_t vf = (m_Vx[x] & 0b00000001) ? 1 : 0;
-        m_Vx[x] >>= 1;
-        m_Vx[0xF] = vf;
+        add_handler([this, x, y]() {
+            m_Vx[x] = m_Vx[y];
+            uint8_t vf = (m_Vx[x] & 0b00000001) ? 1 : 0;
+            m_Vx[x] >>= 1;
+            m_Vx[0xF] = vf;
+        });
         return;
     }
 
     if (match(0x8, nullopt, nullopt, 0x7)) {
-        uint8_t vf = (m_Vx[y] >= m_Vx[x]) ? 1 : 0;
-        m_Vx[x] = m_Vx[y] - m_Vx[x];
-        m_Vx[0xF] = vf;
+        add_handler([this, x, y]() {
+            uint8_t vf = (m_Vx[y] >= m_Vx[x]) ? 1 : 0;
+            m_Vx[x] = m_Vx[y] - m_Vx[x];
+            m_Vx[0xF] = vf;
+        });
         return;
     }
 
     if (match(0x8, nullopt, nullopt, 0xE)) {
-        m_Vx[x] = m_Vx[y];
-        uint8_t vf = (m_Vx[x] & 0b10000000) ? 1 : 0;
-        m_Vx[x] <<= 1;
-        m_Vx[0xF] = vf;
+        add_handler([this, x, y]() {
+            m_Vx[x] = m_Vx[y];
+            uint8_t vf = (m_Vx[x] & 0b10000000) ? 1 : 0;
+            m_Vx[x] <<= 1;
+            m_Vx[0xF] = vf;
+        });
         return;
     }
 
     if (match(0x9, nullopt, nullopt, 0x0)) {
-        if (m_Vx[x] != m_Vx[y]) {
-            m_PC += 2;
-        }
+        add_handler([this, x, y]() {
+            if (m_Vx[x] != m_Vx[y]) {
+                m_PC += 2;
+            }
+        });
         return;
     }
 
     if (match(0xA, nullopt, nullopt, nullopt)) {
-        m_I = nnn;
+        add_handler([this, nnn]() { m_I = nnn; });
         return;
     }
 
     if (match(0xB, nullopt, nullopt, nullopt)) {
-        m_PC = nnn + m_Vx[0x0];
+        add_handler([this, nnn]() { m_PC = nnn + m_Vx[0x0]; });
         return;
     }
 
     if (match(0xC, nullopt, nullopt, nullopt)) {
         uint8_t &rand_byte = m_bytes[0];
-        control_unit_read(constants::RNG_ADDR, rand_byte);
-        m_Vx[x] = kk & rand_byte;
+        add_control_unit_read(constants::RNG_ADDR, rand_byte);
+        add_handler([this, x, kk, &rand_byte]() { m_Vx[x] = kk & rand_byte; });
         return;
     }
 
     if (match(0xD, nullopt, nullopt, nullopt)) {
-        // stall while vblank
         uint8_t &vblank = m_bytes[0];
-        control_unit_read(constants::PPU_CLEAR_OR_READ_VBLANK_ADDR, vblank);
-        if (vblank) {
-            m_PC -= 2;
-            return;
-        }
+        uint8_t &n_byte = m_bytes[1];
+        uint8_t *i_bytes = reinterpret_cast<uint8_t *>(&m_I);
 
-        control_unit_write(constants::PPU_SPRITE_X_ADDR, m_Vx[x]);
-        control_unit_write(constants::PPU_SPRITE_Y_ADDR, m_Vx[y]);
-        control_unit_write(constants::PPU_SPRITE_ADDR_LO, m_I & 0xFF);
-        control_unit_write(constants::PPU_SPRITE_ADDR_HI, m_I >> 8);
-        control_unit_write(constants::PPU_DRAW_SPRITE_OR_READ_TOGGLED_OFF_ADDR,
-                           n);
-        control_unit_read(constants::PPU_DRAW_SPRITE_OR_READ_TOGGLED_OFF_ADDR,
-                          m_Vx[0xF]);
+        // stall while vblank
+        add_control_unit_read(constants::PPU_CLEAR_OR_READ_VBLANK_ADDR, vblank);
+
+        add_handler([this, x, y, n, &vblank, &n_byte, i_bytes]() {
+            n_byte = n;
+            if (vblank) {
+                m_PC -= 2;
+            } else {
+                add_control_unit_write(constants::PPU_SPRITE_X_ADDR, m_Vx[x]);
+                add_control_unit_write(constants::PPU_SPRITE_Y_ADDR, m_Vx[y]);
+                add_control_unit_write(constants::PPU_SPRITE_ADDR_LO,
+                                       i_bytes[0]);
+                add_control_unit_write(constants::PPU_SPRITE_ADDR_HI,
+                                       i_bytes[1]);
+                add_control_unit_write(
+                    constants::PPU_DRAW_SPRITE_OR_READ_TOGGLED_OFF_ADDR,
+                    n_byte);
+                add_control_unit_read(
+                    constants::PPU_DRAW_SPRITE_OR_READ_TOGGLED_OFF_ADDR,
+                    m_Vx[0xF]);
+            }
+        });
         return;
     }
 
     if (match(0xE, nullopt, 0x9, 0xE)) {
         uint8_t &keyboard_lo = m_bytes[0];
         uint8_t &keyboard_hi = m_bytes[1];
-        control_unit_read(constants::KEYBOARD_ADDR_LO, keyboard_lo);
-        control_unit_read(constants::KEYBOARD_ADDR_HI, keyboard_hi);
-        uint16_t keyboard_state = (keyboard_hi << 8) | keyboard_lo;
-        if (keyboard_state & (0b00000001 << m_Vx[x])) {
-            m_PC += 2;
-        }
+        add_control_unit_read(constants::KEYBOARD_ADDR_LO, keyboard_lo);
+        add_control_unit_read(constants::KEYBOARD_ADDR_HI, keyboard_hi);
+        add_handler([this, x, &keyboard_lo, &keyboard_hi]() {
+            uint16_t keyboard_state = (keyboard_hi << 8) | keyboard_lo;
+            if (keyboard_state & (0b00000001 << m_Vx[x])) {
+                m_PC += 2;
+            }
+        });
         return;
     }
 
     if (match(0xE, nullopt, 0xA, 0x1)) {
         uint8_t &keyboard_lo = m_bytes[0];
         uint8_t &keyboard_hi = m_bytes[1];
-        control_unit_read(constants::KEYBOARD_ADDR_LO, keyboard_lo);
-        control_unit_read(constants::KEYBOARD_ADDR_HI, keyboard_hi);
-        uint16_t keyboard_state = (keyboard_hi << 8) | keyboard_lo;
-        if (!(keyboard_state & (0b00000001 << m_Vx[x]))) {
-            m_PC += 2;
-        }
+        add_control_unit_read(constants::KEYBOARD_ADDR_LO, keyboard_lo);
+        add_control_unit_read(constants::KEYBOARD_ADDR_HI, keyboard_hi);
+        add_handler([this, x, &keyboard_lo, &keyboard_hi]() {
+            uint16_t keyboard_state = (keyboard_hi << 8) | keyboard_lo;
+            if (!(keyboard_state & (0b00000001 << m_Vx[x]))) {
+                m_PC += 2;
+            }
+        });
         return;
     }
 
     if (match(0xF, nullopt, 0x0, 0x7)) {
-        control_unit_read(constants::DELAY_TIMER_ADDR, m_Vx[x]);
+        add_control_unit_read(constants::DELAY_TIMER_ADDR, m_Vx[x]);
         return;
     }
 
     if (match(0xF, nullopt, 0x0, 0xA)) {
         uint8_t &key_released = m_bytes[0];
-        control_unit_write(constants::KEYBOARD_WAIT_REL_ADDR, 0);
-        control_unit_read(constants::KEYBOARD_WAIT_REL_ADDR, key_released);
+        add_control_unit_write(constants::KEYBOARD_WAIT_REL_ADDR, 0);
+        add_control_unit_read(constants::KEYBOARD_WAIT_REL_ADDR, key_released);
 
-        if (key_released == constants::NULL_KEY) {
-            m_PC -= 2;
-        } else {
-            m_Vx[x] = key_released;
-        }
+        add_handler([this, x, &key_released]() {
+            if (key_released == constants::NULL_KEY) {
+                m_PC -= 2;
+            } else {
+                m_Vx[x] = key_released;
+            }
+        });
         return;
     }
 
     if (match(0xF, nullopt, 0x1, 0x5)) {
-        control_unit_write(constants::DELAY_TIMER_ADDR, m_Vx[x]);
+        add_control_unit_write(constants::DELAY_TIMER_ADDR, m_Vx[x]);
         return;
     }
 
     if (match(0xF, nullopt, 0x1, 0x8)) {
-        control_unit_write(constants::SOUND_TIMER_ADDR, m_Vx[x]);
+        add_control_unit_write(constants::SOUND_TIMER_ADDR, m_Vx[x]);
         return;
     }
 
     if (match(0xF, nullopt, 0x1, 0xE)) {
-        m_I += m_Vx[x];
+        add_handler([this, x]() { m_I += m_Vx[x]; });
         return;
     }
 
     if (match(0xF, nullopt, 0x2, 0x9)) {
-        m_I = constants::FONTSET_OFFSET + constants::FONTSET_SIZE * m_Vx[x];
+        add_handler([this, x]() {
+            m_I = constants::FONTSET_OFFSET + constants::FONTSET_SIZE * m_Vx[x];
+        });
         return;
     }
 
     if (match(0xF, nullopt, 0x3, 0x3)) {
-        uint16_t val = m_Vx[x];
-        control_unit_write(m_I + 2, val % 10);
-        val /= 10;
-        control_unit_write(m_I + 1, val % 10);
-        val /= 10;
-        control_unit_write(m_I, val % 10);
+        uint8_t &val = m_bytes[0];
+        uint8_t &val_mod_10 = m_bytes[1];
+
+        add_handler([this, x, &val, &val_mod_10]() {
+            val = m_Vx[x];
+            val_mod_10 = val % 10;
+            m_I += 2;
+        });
+        add_control_unit_write(m_I, val_mod_10);
+        add_handler([this, &val, &val_mod_10]() {
+            val /= 10;
+            val_mod_10 = val % 10;
+            m_I--;
+        });
+        add_control_unit_write(m_I, val_mod_10);
+        add_handler([this, &val, &val_mod_10]() {
+            val /= 10;
+            val_mod_10 = val % 10;
+            m_I--;
+        });
+        add_control_unit_write(m_I, val_mod_10);
         return;
     }
 
     if (match(0xF, nullopt, 0x5, 0x5)) {
         for (uint8_t offset = 0; offset <= x; ++offset) {
-            control_unit_write(m_I, m_Vx[offset]);
-            m_I++;
+            add_control_unit_write(m_I, m_Vx[offset]);
+            add_handler([this]() { m_I++; });
         }
         return;
     }
 
     if (match(0xF, nullopt, 0x6, 0x5)) {
         for (uint8_t offset = 0; offset <= x; ++offset) {
-            control_unit_read(m_I, m_Vx[offset]);
-            m_I++;
+            add_control_unit_read(m_I, m_Vx[offset]);
+            add_handler([this]() { m_I++; });
         }
         return;
     }
