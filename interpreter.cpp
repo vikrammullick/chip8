@@ -11,14 +11,7 @@ interpreter_t::interpreter_t(const vector<char> &rom_bytes)
       m_delay_timer(m_bus, constants::DELAY_TIMER_CHIP_SELECT),
       m_sound_timer(m_bus, constants::SOUND_TIMER_CHIP_SELECT),
       m_rng(m_bus),
-      m_cpu(m_memory,
-            m_ppu,
-            m_keyboard,
-            m_delay_timer,
-            m_sound_timer,
-            m_rng,
-            m_bus,
-            m_address_decoder) {
+      m_cpu(m_bus) {
     sdl_init_window();
 }
 
@@ -40,6 +33,16 @@ void interpreter_t::run() {
         }
         last_ts = current_ts;
 
+        // combinational logic
+        m_address_decoder.select_chip();
+        m_memory.service_request();
+        m_ppu.service_request();
+        m_keyboard.service_request();
+        m_delay_timer.service_request();
+        m_sound_timer.service_request();
+        m_rng.service_request();
+
+        // sequential logic
         m_cpu.tick();
         m_ppu.tick();
         m_delay_timer.tick();

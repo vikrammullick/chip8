@@ -7,68 +7,53 @@
 
 using namespace std;
 
-cpu_t::cpu_t(memory_t &memory,
-             ppu_t &ppu,
-             keyboard_t &keyboard,
-             timer_t &delay_timer,
-             timer_t &sound_timer,
-             rng_t &rng,
-             bus_t &bus,
-             address_decoder_t &address_decoder)
-    : m_memory(memory),
-      m_ppu(ppu),
-      m_keyboard(keyboard),
-      m_delay_timer(delay_timer),
-      m_sound_timer(sound_timer),
-      m_rng(rng),
-      m_bus(bus),
-      m_address_decoder(address_decoder) {}
+cpu_t::cpu_t(bus_t &bus) : m_bus(bus) {}
 
 void cpu_t::add_control_unit_write(const uint16_t &addr, const uint8_t &val) {
     add_handler([this, &addr, &val]() {
         m_bus.m_data_line = val;
         m_bus.m_addr_line = addr;
         m_bus.m_rw_select = 1 << constants::WRITE_SELECT;
-        // TODO: move to combinational logic once cpu implemented at cycle level
-        m_address_decoder.select_chip();
-        m_memory.service_request();
-        m_keyboard.service_request();
-        m_delay_timer.service_request();
-        m_sound_timer.service_request();
-        m_rng.service_request();
-        m_ppu.service_request();
-        m_bus.m_rw_select = 0;
     });
+    constexpr bool NEXT_TICK = true;
+    add_handler([this]() { m_bus.m_rw_select = 0; }, NEXT_TICK);
 }
 
 void cpu_t::add_control_unit_read(const uint16_t &addr, uint8_t &ret) {
-    add_handler([this, &addr, &ret]() {
+    add_handler([this, &addr]() {
         m_bus.m_addr_line = addr;
         m_bus.m_rw_select = 1 << constants::READ_SELECT;
-        // TODO: move to combinational logic once cpu implemented at cycle level
-        m_address_decoder.select_chip();
-        m_memory.service_request();
-        m_keyboard.service_request();
-        m_delay_timer.service_request();
-        m_sound_timer.service_request();
-        m_rng.service_request();
-        m_ppu.service_request();
-        ret = m_bus.m_data_line;
-        m_bus.m_rw_select = 0;
     });
+    constexpr bool NEXT_TICK = true;
+    add_handler(
+        [this, &ret]() {
+            ret = m_bus.m_data_line;
+            m_bus.m_rw_select = 0;
+        },
+        NEXT_TICK);
 }
 
-void cpu_t::add_handler(std::function<void()> &&handler) {
-    m_handlers.push(std::move(handler));
+void cpu_t::add_handler(std::function<void()> &&handler, bool next_tick) {
+    if (m_handlers.empty() || next_tick) {
+        m_handlers.push({});
+    }
+    m_handlers.back().push(std::move(handler));
 }
 
 void cpu_t::tick() {
     if (m_ticks == 0) {
+        // verify instruction has fully executed
+        assert(m_handlers.empty());
+
         add_read_opcode();
     }
 
-    while (!m_handlers.empty()) {
-        m_handlers.front()();
+    if (!m_handlers.empty()) {
+        auto &current_handlers = m_handlers.front();
+        while (!current_handlers.empty()) {
+            current_handlers.front()();
+            current_handlers.pop();
+        }
         m_handlers.pop();
     }
 

@@ -12,14 +12,7 @@
 #include <queue>
 
 class cpu_t {
-    memory_t &m_memory;
-    ppu_t &m_ppu;
-    keyboard_t &m_keyboard;
-    timer_t &m_delay_timer;
-    timer_t &m_sound_timer;
-    rng_t &m_rng;
     bus_t &m_bus;
-    address_decoder_t &m_address_decoder;
 
     std::array<uint8_t, constants::NUM_REGS> m_Vx;
     uint16_t m_I;
@@ -29,8 +22,8 @@ class cpu_t {
 
     uint64_t m_ticks = 0;
 
-    std::queue<std::function<void()>> m_handlers;
-    void add_handler(std::function<void()> &&handler);
+    std::queue<std::queue<std::function<void()>>> m_handlers;
+    void add_handler(std::function<void()> &&handler, bool next_tick = false);
 
     // inter-cycle history
     uint8_t m_bytes[2];
@@ -42,14 +35,7 @@ class cpu_t {
     void add_opcode(uint16_t opcode);
 
   public:
-    cpu_t(memory_t &memory,
-          ppu_t &ppu,
-          keyboard_t &keyboard,
-          timer_t &delay_timer,
-          timer_t &sound_timer,
-          rng_t &rng,
-          bus_t &bus,
-          address_decoder_t &address_decoder);
+    cpu_t(bus_t &bus);
 
     void tick();
 };
