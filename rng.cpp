@@ -15,7 +15,7 @@ void rng_t::service_request() {
         static std::mt19937 gen(rd());
         static std::uniform_int_distribution<uint16_t> dis(0, 255);
         uint8_t rand_byte = static_cast<uint8_t>(dis(gen));
-        m_bus.m_data_line = rand_byte;
+        m_bus.m_data_line_in = rand_byte;
     }
 
     if (m_bus.m_rw_select & (1 << constants::WRITE_SELECT)) {

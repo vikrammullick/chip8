@@ -1,3 +1,4 @@
 *.o
 chip8
 *.swp
+*obj_dir/

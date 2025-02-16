@@ -26,10 +26,10 @@ void memory_t::service_request() {
     }
 
     if (m_bus.m_rw_select & (1 << constants::READ_SELECT)) {
-        m_bus.m_data_line = read(m_bus.m_addr_line);
+        m_bus.m_data_line_in = read(m_bus.m_addr_line);
     }
 
     if (m_bus.m_rw_select & (1 << constants::WRITE_SELECT)) {
-        write(m_bus.m_addr_line, m_bus.m_data_line);
+        write(m_bus.m_addr_line, m_bus.m_data_line_out);
     }
 }

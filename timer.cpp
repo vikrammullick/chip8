@@ -23,10 +23,10 @@ void timer_t::service_request() {
     }
 
     if (m_bus.m_rw_select & (1 << constants::READ_SELECT)) {
-        m_bus.m_data_line = m_counter;
+        m_bus.m_data_line_in = m_counter;
     }
 
     if (m_bus.m_rw_select & (1 << constants::WRITE_SELECT)) {
-        m_counter = m_bus.m_data_line;
+        m_counter = m_bus.m_data_line_out;
     }
 }

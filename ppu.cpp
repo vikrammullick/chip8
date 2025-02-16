@@ -81,10 +81,10 @@ void ppu_t::service_request() {
 
     if (m_bus.m_rw_select & (1 << constants::READ_SELECT)) {
         if (m_bus.m_addr_line == constants::PPU_CLEAR_OR_READ_VBLANK_ADDR) {
-            m_bus.m_data_line = m_vblank ? 0xFF : 0x00;
+            m_bus.m_data_line_in = m_vblank ? 0xFF : 0x00;
         } else if (m_bus.m_addr_line ==
                    constants::PPU_DRAW_SPRITE_OR_READ_TOGGLED_OFF_ADDR) {
-            m_bus.m_data_line = m_any_pixel_toggled_off ? 1 : 0;
+            m_bus.m_data_line_in = m_any_pixel_toggled_off ? 1 : 0;
         } else {
             assert(false);
         }
@@ -94,18 +94,18 @@ void ppu_t::service_request() {
         if (m_bus.m_addr_line == constants::PPU_CLEAR_OR_READ_VBLANK_ADDR) {
             clear();
         } else if (m_bus.m_addr_line == constants::PPU_SPRITE_X_ADDR) {
-            m_sprite_x = m_bus.m_data_line;
+            m_sprite_x = m_bus.m_data_line_out;
         } else if (m_bus.m_addr_line == constants::PPU_SPRITE_Y_ADDR) {
-            m_sprite_y = m_bus.m_data_line;
+            m_sprite_y = m_bus.m_data_line_out;
         } else if (m_bus.m_addr_line == constants::PPU_SPRITE_ADDR_LO) {
             m_sprite_addr &= 0xFF00;
-            m_sprite_addr |= m_bus.m_data_line;
+            m_sprite_addr |= m_bus.m_data_line_out;
         } else if (m_bus.m_addr_line == constants::PPU_SPRITE_ADDR_HI) {
             m_sprite_addr &= 0x00FF;
-            m_sprite_addr |= m_bus.m_data_line << 8;
+            m_sprite_addr |= m_bus.m_data_line_out << 8;
         } else if (m_bus.m_addr_line ==
                    constants::PPU_DRAW_SPRITE_OR_READ_TOGGLED_OFF_ADDR) {
-            draw_sprite(m_bus.m_data_line);
+            draw_sprite(m_bus.m_data_line_out);
         } else {
             assert(false);
         }

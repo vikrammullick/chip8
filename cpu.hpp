@@ -11,8 +11,13 @@
 
 #include <queue>
 
+#include "Vcpu.h"
+#include <verilated.h>
+
 class cpu_t {
     bus_t &m_bus;
+
+    Vcpu m_fpga_cpu;
 
     std::array<uint8_t, constants::NUM_REGS> m_Vx;
     uint16_t m_I;

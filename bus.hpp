@@ -6,7 +6,8 @@
 struct bus_t {
     uint16_t m_addr_line;
 
-    uint8_t m_data_line;
+    uint8_t m_data_line_in;
+    uint8_t m_data_line_out;
 
     uint8_t m_rw_select = 0;
 

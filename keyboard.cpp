@@ -11,17 +11,17 @@ void keyboard_t::service_request() {
 
     if (m_bus.m_rw_select & (1 << constants::READ_SELECT)) {
         if (m_bus.m_addr_line == constants::KEYBOARD_ADDR_LO) {
-            m_bus.m_data_line = g_keyboard & 0xFF;
+            m_bus.m_data_line_in = g_keyboard & 0xFF;
         } else if (m_bus.m_addr_line == constants::KEYBOARD_ADDR_HI) {
-            m_bus.m_data_line = g_keyboard >> 8;
+            m_bus.m_data_line_in = g_keyboard >> 8;
         } else {
             assert(m_bus.m_addr_line == constants::KEYBOARD_WAIT_REL_ADDR);
 
             if (!m_waiting_key_release && m_active_key_opt) {
-                m_bus.m_data_line = *m_active_key_opt;
+                m_bus.m_data_line_in = *m_active_key_opt;
                 m_active_key_opt.reset();
             } else {
-                m_bus.m_data_line = constants::NULL_KEY;
+                m_bus.m_data_line_in = constants::NULL_KEY;
             }
         }
     }

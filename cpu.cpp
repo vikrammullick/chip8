@@ -7,11 +7,20 @@
 
 using namespace std;
 
-cpu_t::cpu_t(bus_t &bus) : m_bus(bus) {}
+cpu_t::cpu_t(bus_t &bus) : m_bus(bus) {
+    m_fpga_cpu.clk = 0;
+    m_fpga_cpu.eval();
+
+    m_fpga_cpu.reset = 1;
+    m_fpga_cpu.clk = 1;
+    m_fpga_cpu.eval();
+
+    m_fpga_cpu.reset = 0;
+}
 
 void cpu_t::add_control_unit_write(const uint16_t &addr, const uint8_t &val) {
     add_handler([this, &addr, &val]() {
-        m_bus.m_data_line = val;
+        m_bus.m_data_line_out = val;
         m_bus.m_addr_line = addr;
         m_bus.m_rw_select = 1 << constants::WRITE_SELECT;
     });
@@ -27,7 +36,7 @@ void cpu_t::add_control_unit_read(const uint16_t &addr, uint8_t &ret) {
     constexpr bool NEXT_TICK = true;
     add_handler(
         [this, &ret]() {
-            ret = m_bus.m_data_line;
+            ret = m_bus.m_data_line_in;
             m_bus.m_rw_select = 0;
         },
         NEXT_TICK);
@@ -41,25 +50,48 @@ void cpu_t::add_handler(std::function<void()> &&handler, bool next_tick) {
 }
 
 void cpu_t::tick() {
-    if (m_ticks == 0) {
-        // verify instruction has fully executed
-        assert(m_handlers.empty());
 
-        add_read_opcode();
-    }
+    // TODO: move into compile flag
+    bool use_fpga = true;
+    if (!use_fpga) {
+        if (m_ticks == 0) {
+            // verify instruction has fully executed
+            assert(m_handlers.empty());
 
-    if (!m_handlers.empty()) {
-        auto &current_handlers = m_handlers.front();
-        while (!current_handlers.empty()) {
-            current_handlers.front()();
-            current_handlers.pop();
+            add_read_opcode();
         }
-        m_handlers.pop();
-    }
 
-    if (++m_ticks ==
-        (constants::INTERPRETER_CLOCK_RATE / constants::CPU_CLOCK_RATE)) {
-        m_ticks = 0;
+        if (!m_handlers.empty()) {
+            auto &current_handlers = m_handlers.front();
+            while (!current_handlers.empty()) {
+                current_handlers.front()();
+                current_handlers.pop();
+            }
+            m_handlers.pop();
+        }
+
+        if (++m_ticks ==
+            (constants::INTERPRETER_CLOCK_RATE / constants::CPU_CLOCK_RATE)) {
+            m_ticks = 0;
+        }
+    } else {
+        m_fpga_cpu.clk = 0;
+        m_fpga_cpu.eval();
+
+        m_fpga_cpu.clk = 1;
+        m_fpga_cpu.data_in = m_bus.m_data_line_in;
+        m_fpga_cpu.eval();
+
+        m_bus.m_addr_line = m_fpga_cpu.addr;
+        m_bus.m_data_line_out = m_fpga_cpu.data_out;
+        m_bus.m_rw_select = m_fpga_cpu.cu_state;
+
+        uint16_t err_opcode = m_fpga_cpu.error;
+        if (err_opcode) {
+            stringstream oss;
+            oss << "unknown opcode: 0x" << std::hex << err_opcode;
+            throw std::runtime_error(oss.str());
+        }
     }
 }
 
@@ -184,7 +216,10 @@ void cpu_t::add_opcode(uint16_t opcode) {
     }
 
     if (match(0x8, nullopt, nullopt, 0x0)) {
-        add_handler([this, x, y]() { m_Vx[x] = m_Vx[y]; });
+        add_handler([this, x, y]() {
+            m_Vx[x] = m_Vx[y];
+            m_Vx[0xF] = 0;
+        });
         return;
     }
 
